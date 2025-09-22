@@ -1,0 +1,12 @@
+# Arquivos de log do Mosquitto
+mqtt-broker/logs/
+
+# Dados persistentes do Mosquitto (se usar bind mounts)
+mqtt-broker/data/
+
+# Docker volumes
+.docker/
+
+# Arquivos temporários
+*.tmp
+*.log

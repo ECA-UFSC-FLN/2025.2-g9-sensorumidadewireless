@@ -1,0 +1,35 @@
+version: '3.8'
+
+networks:
+  estufa-network:
+    driver: bridge
+
+services:
+  mosquitto:
+    build:
+      context: ./mqtt-broker
+      dockerfile: Dockerfile
+    container_name: mosquitto-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"    # MQTT
+      - "9001:9001"    # WebSocket
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    networks:
+      - estufa-network
+    environment:
+      - TZ=America/Sao_Paulo
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5s mosquitto_pub -h localhost -p 1883 -t 'health/check' -m 'ping' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mosquitto_data:
+    driver: local
+  mosquitto_logs:
+    driver: local
