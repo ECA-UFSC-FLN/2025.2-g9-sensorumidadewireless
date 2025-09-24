@@ -88,6 +88,14 @@ body { background: var(--bg); color: var(--text); font-family: Inter, system-ui,
 .legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 .legend-swatch { display: none; }
 
+/* Chart toolbar */
+.chart-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0 8px; flex-wrap: wrap; }
+.chart-toolbar .left, .chart-toolbar .right { display: inline-flex; gap: 6px; align-items: center; }
+.btn.active { background: rgba(96,165,250,0.08); border-color: var(--accent-2); }
+.chart-scroll { padding: 4px 6px 0; }
+.chart-scroll input[type="range"] { width: 100%; accent-color: var(--accent-2); }
+.chart-toolbar select.btn { appearance: none; background: transparent; color: var(--text); padding: 6px 10px; border-radius: 6px; }
+
 /* History */
 .history { max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; }
 .history table { width: 100%; border-collapse: collapse; font-size: 12px; }

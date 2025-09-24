@@ -1,0 +1,128 @@
+.time-series-chart {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.chart-toolbar .left,
+.chart-toolbar .right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-toolbar select.btn {
+  padding: 4px 8px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.legend-item:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-item.active {
+  opacity: 1;
+}
+
+.legend-item.active:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.legend-item .color-mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .color-mark {
+  transform: scale(1.2);
+}
+
+.chart-scroll {
+  margin-top: 8px;
+  padding: 0 40px 0 40px;
+}
+
+.chart-scroll input[type="range"] {
+  width: 100%;
+  margin: 0;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.chart-scroll input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.chart-scroll input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.chart-scroll input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+.chart-scroll input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.2);
+}
+
+/* Estilos para as linhas do gráfico */
+.recharts-line {
+  transition: opacity 0.3s ease;
+}
+
+.recharts-line:hover {
+  opacity: 1 !important;
+}
+
+.recharts-tooltip-cursor {
+  opacity: 0.1;
+}

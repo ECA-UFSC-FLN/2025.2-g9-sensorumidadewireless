@@ -1,45 +1,52 @@
 import React, { useMemo, useState } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Brush, Legend, ResponsiveContainer } from 'recharts'
+import TimeSeriesChart from './TimeSeriesChart'
 import SensorRow from './SensorRow'
 import { format } from 'date-fns'
 
 function ChartProcess({process, sensors}){
-  // Build recharts dataset: each point has time, avg, and per-sensor series (synthetic deviations over avg while in mock)
   const palette = ['#2ecc71', '#ff6bcb', '#9b59b6']
   const sens = Array.isArray(sensors)? sensors: []
-  const seriesKeys = sens.map((s,idx)=> ({ key: s.sensor_id, color: palette[idx%palette.length] }))
-  const data = useMemo(()=>{
-    const msgs = (process?.messages||[]).slice().sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp))
-    return msgs.map((m,i)=>{
-      const base = Number(m.umidade)||0
-      const point = { t: new Date(m.timestamp), avg: base }
-      seriesKeys.forEach((s,idx)=>{
-        const phase = (idx%10)/10
-        const offset = (idx % 3 - 1) * 2
-        const amp = 5
-        point[s.key] = Math.max(0, Math.min(100, base + Math.sin(i*0.8+phase)*amp + offset))
-      })
-      return point
-    })
-  },[process, seriesKeys])
+  
+  // Prepare chart data and series config
+  const chartData = useMemo(() => {
+    if (!process?.messages) return []
+    return process.messages
+      .filter(msg => msg && msg.timestamp && msg.umidade)
+      .map(msg => ({
+        timestamp: msg.timestamp,
+        values: {
+          avg: Number(msg.umidade) || 0,
+          ...sens.reduce((acc, s, idx) => {
+            const base = Number(msg.umidade) || 0
+            const phase = (idx % 10) / 10
+            const offset = (idx % 3 - 1) * 2
+            const amp = 5
+            acc[s.sensor_id] = Math.max(0, Math.min(100, 
+              base + Math.sin((new Date(msg.timestamp).getTime() / 1000) + phase) * amp + offset
+            ))
+            return acc
+          }, {})
+        }
+      }))
+  }, [process, sens])
+
+  // Configure series appearance
+  const series = useMemo(() => [
+    { key: 'avg', label: 'Média', color: 'var(--accent)' },
+    ...sens.map((s, idx) => ({
+      key: s.sensor_id,
+      label: s.sensor_id,
+      color: palette[idx % palette.length]
+    }))
+  ], [sens])
 
   return (
-    <div style={{width:'100%', height:260}}>
-      <ResponsiveContainer>
-        <LineChart data={data} margin={{ left: 24, right: 12, top: 8, bottom: 8 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-          <XAxis dataKey="t" tickFormatter={(v)=> format(v,'HH:mm')} stroke="var(--muted)" />
-          <YAxis domain={[0,100]} tickFormatter={(v)=> `${v}%`} stroke="var(--muted)" />
-          <Tooltip labelFormatter={(v)=> format(v,'yyyy-MM-dd HH:mm')} formatter={(v,k)=> [`${v}%`, k==='avg'?'Média':k]} contentStyle={{ background:'#0e1620', border:'1px solid var(--border)' }} />
-          <Line type="monotone" dataKey="avg" stroke="var(--accent)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-          {seriesKeys.map(s=> (
-            <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={1.5} dot={false} strokeDasharray="5 5" isAnimationActive={false} />
-          ))}
-          <Legend verticalAlign="bottom" height={24} formatter={(v)=> v==='avg'?'Média':v} />
-          <Brush travellerWidth={8} height={22} stroke="var(--accent)" startIndex={Math.max(0, data.length-20)} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <TimeSeriesChart
+      data={chartData}
+      series={series}
+      defaultWindowMs={10 * 60 * 1000} // 10 min
+      autoFollow={true}
+    />
   )
 }
 
