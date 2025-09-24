@@ -11,12 +11,9 @@ export default function EstufaList({estufas, onOpen}){
   )
 
   return (
-    <div className="estufa-list">
+    <div className="estufa-column">
       {list.map(e=> (
-        <div key={e.id} className="estufa-list-item">
-          <EstufaCard estufa={e} />
-          <button className="btn" onClick={()=>onOpen && onOpen(e)}>Abrir {e.id}</button>
-        </div>
+        <EstufaCard key={e.id} estufa={e} onOpen={onOpen} compact={true} />
       ))}
     </div>
   )

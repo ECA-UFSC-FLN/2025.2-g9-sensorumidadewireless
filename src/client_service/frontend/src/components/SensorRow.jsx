@@ -1,27 +1,27 @@
 import React from 'react'
-import { formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { formatDistanceToNow, parseISO } from 'date-fns'
 
-export default function SensorRow({sensor, thresholdMin, showLast=true}){
-  const lastSeen = sensor.timestamp
-  let timeAgo = 'N/A'
-  try{
-    timeAgo = formatDistanceToNowStrict(parseISO(lastSeen), { addSuffix: true })
-  }catch(e){ /* ignore */ }
+export default function SensorRow({ sensor, thresholdMin = 10, showLast = true }) {
+  const active = sensor.active !== false
+  const battery = typeof sensor.soc_bateria === 'number' ? sensor.soc_bateria : 100
+  const humidity = typeof sensor.umidade === 'number' ? sensor.umidade : (sensor.last_umidade ?? null)
+  const lastSeen = sensor.last_seen || sensor.ultima_leitura
 
-  const inactive = (()=>{
-    try{
-      const diffMs = Date.now() - new Date(lastSeen).getTime()
-      return diffMs > thresholdMin * 60 * 1000
-    }catch(e){return true}
-  })()
+  const humClass = humidity == null ? '' : (humidity < thresholdMin ? 'bad' : 'ok')
+
+  const status = active ? 'ATIVO' : 'INATIVO'
 
   return (
-    <div className={`sensor-row ${inactive? 'inactive':''} ${!showLast? 'no-last':''}`}>
-      <div>{sensor.sensor_id}</div>
-      <div>{sensor.umidade}%</div>
-      <div>{sensor.soc_bateria}%</div>
-      {showLast && <div>{timeAgo}</div>}
-      <div>{inactive? <span className="badge bad">INATIVO</span> : <span className="badge ok">OK</span>}</div>
+    <div className={`sensor-row ${showLast ? '' : 'no-last'}`}>
+      <div className="sensor-name">{sensor.name || sensor.sensor_id}</div>
+      <div className={`sensor-hum ${humClass}`}>{humidity == null ? '—' : `${humidity}%`}</div>
+      <div className="sensor-batt">{battery}%</div>
+      <div className={`sensor-status ${active ? 'ok' : 'bad'}`}>{status}</div>
+      {showLast && (
+        <div className="sensor-last">
+          {lastSeen ? formatDistanceToNow(parseISO(lastSeen), { addSuffix: true }) : '—'}
+        </div>
+      )}
     </div>
   )
 }
