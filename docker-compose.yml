@@ -28,6 +28,25 @@ services:
       retries: 3
       start_period: 30s
 
+  frontend:
+    build:
+      context: ./src/client_service/frontend
+      dockerfile: Dockerfile
+    container_name: estufa-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"   # host:container (dev preview on 5173 -> nginx 80)
+    networks:
+      - estufa-network
+    depends_on:
+      - mosquitto
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   mosquitto_data:
     driver: local

@@ -1,0 +1,30 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# Vite / build
+dist/
+build/
+
+# Frontend specific (local dev)
+src/client_service/frontend/node_modules/
+src/client_service/frontend/dist/
+src/client_service/frontend/.env
+src/client_service/frontend/.env.*
+
+# Docker
+docker-compose.override.yml
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# logs
+logs/
+*.log
