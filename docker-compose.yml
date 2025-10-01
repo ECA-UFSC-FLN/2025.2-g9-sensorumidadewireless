@@ -40,8 +40,28 @@ services:
       - estufa-network
     depends_on:
       - mosquitto
+      - api
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      
+  api:
+    build:
+      context: ./src
+      dockerfile: Dockerfile.api
+    container_name: estufa-api
+    restart: unless-stopped
+    ports:
+      - "8007:8007"   # host:container
+    networks:
+      - estufa-network
+    depends_on:
+      - mosquitto
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8007/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -1,0 +1,21 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install uv
+RUN pip install uv
+
+# Copy pyproject.toml first for better caching
+COPY client_service/backend/pyproject.toml .
+
+# Install dependencies using uv
+RUN uv sync && uv lock
+
+# Copy the rest of the application
+COPY client_service/backend/app ./app
+
+# Expose the port the app runs on
+EXPOSE 8007
+
+# Command to run the application
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8007"]
