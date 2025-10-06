@@ -104,7 +104,7 @@ stateDiagram
     DeepSleep --> Medicao: Acorda do deep sleep
     Medicao --> Cleanup: Processo finalizado
     Cleanup --> Shutdown: ID liberado (unbind)
-    Shutdown --> [*]
+    Shutdown --> ConexaoMQTT: Reset
 ```
 
 ## Testando o Sistema

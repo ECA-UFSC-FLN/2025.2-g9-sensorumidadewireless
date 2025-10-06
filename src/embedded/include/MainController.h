@@ -55,6 +55,9 @@ public:
     // Main loop method
     void loop();
 
+    // Get current state
+    Estado getState() const { return estadoAtual; }
+
 private:
     // Interfaces injected
     IHardware& hardware;

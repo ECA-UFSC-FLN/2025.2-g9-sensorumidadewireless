@@ -19,7 +19,9 @@ public:
     }
 
     void deepSleep(unsigned long microseconds) override {
+        // No teste, reduzimos o deep sleep para 100ms para acelerar a execução
         std::cout << "[MockHardware] Deep sleep for " << microseconds << " microseconds\n";
+        usleep(100000); // 100ms
     }
 
     unsigned long generateRandomNumber() override {
@@ -41,6 +43,12 @@ public:
 // Mock MQTT Implementation
 class MockMQTT : public IMQTTClient {
 public:
+    using PublishInterceptor = std::function<void(const char*, const char*)>;
+
+    void setPublishInterceptor(PublishInterceptor interceptor) {
+        publishInterceptor = interceptor;
+    }
+
     // Simulate receiving a message
     void simulateMessage(const char* topic, const char* payload) {
         if (callback) {
@@ -56,6 +64,10 @@ public:
 
     bool publish(const char* topic, const char* payload) override {
         std::cout << "[MockMQTT] Published to " << topic << ": " << payload << "\n";
+        
+        if (publishInterceptor) {
+            publishInterceptor(topic, payload);
+        }
         
         // Simulate bind response if this is a bind request
         if (strcmp(topic, "sensores/bind/request") == 0) {
@@ -107,6 +119,7 @@ public:
 private:
     bool connected = false;
     MQTTCallback callback = nullptr;
+    PublishInterceptor publishInterceptor = nullptr;
 };
 
 // Mock JSON Implementation

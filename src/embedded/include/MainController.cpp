@@ -63,16 +63,15 @@ StringView MainController::generateUUID() {
 }
 
 void MainController::realizaMedicao() {
-    MensagemMedicao med;
-    med.medicao = hardware.readAnalog(34);
-    med.soc = 100.0;
-    strcpy(med.id, idFinal);
-
+    // Cria um JSON manualmente para a medição
     char buffer[128];
-    if (json.serialize(&med, buffer, sizeof(buffer))) {
-        mqtt.publish(TOPICO_MEDICAO, buffer);
-        logger.printf("[MEDICAO] %.2f V enviada com ID %s\n", med.medicao, med.id);
-    }
+    snprintf(buffer, sizeof(buffer),
+             "{\"medicao\": %.2f, \"id\": \"%s\"}",
+             hardware.readAnalog(34),
+             idFinal);
+
+    mqtt.publish(TOPICO_MEDICAO, buffer);
+    logger.printf("[MEDICAO] %.2f V enviada com ID %s\n", hardware.readAnalog(34), idFinal);
 }
 
 void MainController::handleConexaoMQTT() {
@@ -133,6 +132,8 @@ void MainController::handleMedicao() {
 void MainController::handleDeepSleep() {
     logger.info("[SLEEP] Entrando em deep sleep por 10s...");
     hardware.deepSleep(10 * 1000000);
+    // Após acordar do deep sleep, volta para o estado de medição
+    estadoAtual = MEDICAO;
 }
 
 void MainController::handleCleanup() {
@@ -153,7 +154,12 @@ void MainController::handleCleanup() {
 
 void MainController::handleShutdown() {
     mqtt.publish(TOPICO_STATUS, "shutdown");
-    hardware.deepSleep(0); // Sleep forever
+    // Reseta todas as flags para o próximo ciclo
+    processoAtivo = false;
+    processoFinalizado = false;
+    bindOk = false;
+    // Volta para o estado inicial
+    estadoAtual = CONEXAO_MQTT;
 }
 
 void MainController::loop() {
