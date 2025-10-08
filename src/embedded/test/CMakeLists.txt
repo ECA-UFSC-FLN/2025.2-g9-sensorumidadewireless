@@ -10,13 +10,13 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 # Add the test executable
 add_executable(test_controller 
     test_controller.cpp
-    ../include/MainController.cpp
+    ../lib/controllers/MainController.cpp
 )
 
 # Include directories
 target_include_directories(test_controller PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
 )
 
 # Link against required libraries

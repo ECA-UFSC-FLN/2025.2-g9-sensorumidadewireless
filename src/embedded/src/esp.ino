@@ -4,8 +4,8 @@
 #include <esp_system.h>
 
 // ===== CONFIGURAÇÕES DE REDE/MQTT =====
-const char* ssid = "SEU_WIFI";
-const char* password = "SUA_SENHA";
+const char* ssid = "wifi";
+const char* password = "senha";
 const char* mqtt_server = "127.0.0.1";  // IP do broker
 const int mqtt_port = 1883;
 

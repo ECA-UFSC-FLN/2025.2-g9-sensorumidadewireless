@@ -1,7 +1,7 @@
 #ifndef ESP32_JSON_H
 #define ESP32_JSON_H
 
-#include "../../include/utils/json_interface.h"
+#include "../utils/json_interface.h"
 #include <ArduinoJson.h>
 
 class ESP32JsonSerializer : public IJsonSerializer {

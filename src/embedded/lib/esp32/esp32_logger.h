@@ -1,7 +1,7 @@
 #ifndef ESP32_LOGGER_H
 #define ESP32_LOGGER_H
 
-#include "../../include/utils/logger_interface.h"
+#include "../utils/logger_interface.h"
 
 class ESP32Logger : public ILogger {
 public:

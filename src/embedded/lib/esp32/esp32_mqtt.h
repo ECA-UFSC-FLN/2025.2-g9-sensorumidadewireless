@@ -1,7 +1,7 @@
 #ifndef ESP32_MQTT_H
 #define ESP32_MQTT_H
 
-#include "../../include/comm/mqtt_interface.h"
+#include "../comm/mqtt_interface.h"
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 

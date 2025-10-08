@@ -3,11 +3,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../include/utils/string_utils.h"
-#include "../include/hal/hardware_interface.h"
-#include "../include/comm/mqtt_interface.h"
-#include "../include/utils/json_interface.h"
-#include "../include/utils/logger_interface.h"
+#include "../utils/string_utils.h"
+#include "../hal/hardware_interface.h"
+#include "../comm/mqtt_interface.h"
+#include "../utils/json_interface.h"
+#include "../utils/logger_interface.h"
 
 class MainController {
 public:

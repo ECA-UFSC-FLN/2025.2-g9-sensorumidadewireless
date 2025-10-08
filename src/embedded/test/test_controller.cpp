@@ -1,4 +1,4 @@
-#include "../include/MainController.h"
+#include "../lib/controllers/MainController.h"
 #include "mock_implementations.h"
 #include <iostream>
 #include <thread>

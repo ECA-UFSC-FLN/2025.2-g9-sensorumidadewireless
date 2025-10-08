@@ -1,10 +1,10 @@
 #ifndef MOCK_IMPLEMENTATIONS_H
 #define MOCK_IMPLEMENTATIONS_H
 
-#include "../include/hal/hardware_interface.h"
-#include "../include/comm/mqtt_interface.h"
-#include "../include/utils/json_interface.h"
-#include "../include/utils/logger_interface.h"
+#include "../lib/hal/hardware_interface.h"
+#include "../lib/comm/mqtt_interface.h"
+#include "../lib/utils/json_interface.h"
+#include "../lib/utils/logger_interface.h"
 #include <unistd.h>
 #include <time.h>
 #include <random>

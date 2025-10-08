@@ -1,7 +1,7 @@
 #ifndef ESP32_HARDWARE_H
 #define ESP32_HARDWARE_H
 
-#include "../../include/hal/hardware_interface.h"
+#include "../hal/hardware_interface.h"
 
 class ESP32Hardware : public IHardware {
 public:
