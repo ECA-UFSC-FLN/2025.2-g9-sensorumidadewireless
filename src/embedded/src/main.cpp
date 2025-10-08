@@ -5,8 +5,8 @@
 #include "../lib/esp32/esp32_logger.h"
 
 // Configurações
-const char* WIFI_SSID = "wifi";
-const char* WIFI_PASSWORD = "senha";
+const char* WIFI_SSID = "LMM_5G";
+const char* WIFI_PASSWORD = "mecatronica";
 const char* MQTT_SERVER = "127.0.0.1";
 const int MQTT_PORT = 1883;
 
