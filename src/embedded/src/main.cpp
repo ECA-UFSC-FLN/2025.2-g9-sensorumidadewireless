@@ -3,6 +3,7 @@
 #include "../lib/esp32/esp32_mqtt.h"
 #include "../lib/esp32/esp32_wifi.h"
 #include "../lib/esp32/esp32_logger.h"
+#include "../lib/esp32/esp32_json.h"
 
 // Configurações
 const char* WIFI_SSID = "LMM_5G";
@@ -13,9 +14,11 @@ const int MQTT_PORT = 1883;
 // Instâncias
 ESP32Logger logger;
 ESP32WiFi wifi(logger);
-ESP32Hardware hardware(logger);
-ESP32MQTT mqtt(logger);
+ESP32Hardware hardware;
+ESP32MQTTClient mqtt(MQTT_SERVER, MQTT_PORT);
 MainController* controller = nullptr;
+ESP32JsonSerializer json;
+
 
 void setup() {
     // Inicializa serial para logging
@@ -30,14 +33,14 @@ void setup() {
     }
 
     // Configura MQTT
-    mqtt.configure(MQTT_SERVER, MQTT_PORT);
+    mqtt.configure();
     if (!mqtt.connect("ESP32_Client")) {
         logger.error("Falha fatal - Não foi possível conectar ao MQTT");
         return;
     }
     
     // Inicializa controlador principal
-    controller = new MainController(hardware, mqtt, logger);
+    controller = new MainController(hardware, mqtt, json, logger);
     logger.info("Sistema inicializado!");
 }
 

@@ -15,8 +15,11 @@ public:
     void setCallback(MQTTCallback callback) override;
     bool isConnected() override;
     void loop() override;
+    void configure();
 
 private:
+    const char* server;
+    int port;
     WiFiClient wifiClient;
     PubSubClient mqttClient;
     static void internalCallback(char* topic, byte* payload, unsigned int length);
