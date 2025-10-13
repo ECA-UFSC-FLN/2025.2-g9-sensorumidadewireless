@@ -15,7 +15,6 @@ public:
     void setCallback(MQTTCallback callback) override;
     bool isConnected() override;
     void loop() override;
-    void configure();
 
 private:
     const char* server;

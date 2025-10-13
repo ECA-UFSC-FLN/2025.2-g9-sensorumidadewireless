@@ -1,44 +1,35 @@
-#include "./esp32_mqtt.h"
+#include "esp32_wifi.h"
+#include <cstring>
 
-MQTTCallback ESP32MQTTClient::userCallback = nullptr;
+ESP32WiFi::ESP32WiFi(ILogger& logger)
+    : _logger(logger), _ssid(nullptr), _password(nullptr) {}
 
-ESP32MQTTClient::ESP32MQTTClient(const char* server, int port) : mqttClient(wifiClient) {
-    this->server = server;
-    this->port = port;
+bool ESP32WiFi::connect() {
+    // Aqui você deve implementar a lógica de conexão WiFi real para ESP32
+    _logger.info("Conectando ao WiFi...");
+    // Simulação de sucesso
+    return true;
 }
 
-bool ESP32MQTTClient::connect(const char* clientId) {
-    return mqttClient.connect(clientId);
+void ESP32WiFi::disconnect() {
+    _logger.info("Desconectando do WiFi...");
+    // Simulação de desconexão
 }
 
-bool ESP32MQTTClient::publish(const char* topic, const char* payload) {
-    return mqttClient.publish(topic, payload);
+bool ESP32WiFi::isConnected() {
+    // Simulação de status de conexão
+    _logger.debug("Verificando conexão WiFi...");
+    return true;
 }
 
-bool ESP32MQTTClient::subscribe(const char* topic) {
-    return mqttClient.subscribe(topic);
+const char* ESP32WiFi::getIPAddress() {
+    // Simulação de IP
+    _logger.debug("Obtendo endereço IP...");
+    return "192.168.1.100";
 }
 
-void ESP32MQTTClient::setCallback(MQTTCallback callback) {
-    userCallback = callback;
-    mqttClient.setCallback(internalCallback);
-}
-
-bool ESP32MQTTClient::isConnected() {
-    return mqttClient.connected();
-}
-
-void ESP32MQTTClient::loop() {
-    mqttClient.loop();
-}
-
-void ESP32MQTTClient::configure() {
-    mqttClient.setServer(this->server, this->port);
-}
-
-
-void ESP32MQTTClient::internalCallback(char* topic, byte* payload, unsigned int length) {
-    if (userCallback) {
-        userCallback(topic, payload, length);
-    }
+void ESP32WiFi::setCredentials(const char* ssid, const char* password) {
+    _ssid = ssid;
+    _password = password;
+    _logger.info("Credenciais de WiFi configuradas.");
 }

@@ -6,8 +6,8 @@
 #include "../lib/esp32/esp32_json.h"
 
 // Configurações
-const char* WIFI_SSID = "LMM_5G";
-const char* WIFI_PASSWORD = "mecatronica";
+const char* WIFI_SSID = "wifi";
+const char* WIFI_PASSWORD = "senha";
 const char* MQTT_SERVER = "127.0.0.1";
 const int MQTT_PORT = 1883;
 
@@ -33,11 +33,11 @@ void setup() {
     }
 
     // Configura MQTT
-    mqtt.configure();
-    if (!mqtt.connect("ESP32_Client")) {
-        logger.error("Falha fatal - Não foi possível conectar ao MQTT");
-        return;
-    }
+    // mqtt.configure();
+    // if (!mqtt.connect("ESP32_Client")) {
+    //     logger.error("Falha fatal - Não foi possível conectar ao MQTT");
+    //     return;
+    // }
     
     // Inicializa controlador principal
     controller = new MainController(hardware, mqtt, json, logger);
