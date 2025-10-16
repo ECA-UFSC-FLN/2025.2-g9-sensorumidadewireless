@@ -1,31 +1,61 @@
 #include "esp32_wifi.h"
-#include <cstring>
+#include <WiFi.h>
 
 ESP32WiFi::ESP32WiFi(ILogger& logger)
     : _logger(logger), _ssid(nullptr), _password(nullptr) {}
 
 bool ESP32WiFi::connect() {
-    // Aqui você deve implementar a lógica de conexão WiFi real para ESP32
+    if (_ssid == nullptr || _password == nullptr) {
+        _logger.error("Credenciais de WiFi não configuradas!");
+        return false;
+    }
+
     _logger.info("Conectando ao WiFi...");
-    // Simulação de sucesso
-    return true;
+    
+    // Desconecta se já estiver conectado
+    if (WiFi.status() == WL_CONNECTED) {
+        WiFi.disconnect();
+        delay(100);
+    }
+    
+    // Inicia conexão WiFi
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(_ssid, _password);
+    
+    // Aguarda conexão (timeout de 20 segundos)
+    int attempts = 0;
+    const int maxAttempts = 40; // 40 * 500ms = 20 segundos
+    
+    while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
+        delay(500);
+        _logger.debug(".");
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        _logger.info("WiFi conectado!");
+        _logger.printf("Endereço IP: %s\n", WiFi.localIP().toString().c_str());
+        return true;
+    } else {
+        _logger.error("Falha ao conectar ao WiFi!");
+        return false;
+    }
 }
 
 void ESP32WiFi::disconnect() {
     _logger.info("Desconectando do WiFi...");
-    // Simulação de desconexão
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
 }
 
 bool ESP32WiFi::isConnected() {
-    // Simulação de status de conexão
-    _logger.debug("Verificando conexão WiFi...");
-    return true;
+    return WiFi.status() == WL_CONNECTED;
 }
 
 const char* ESP32WiFi::getIPAddress() {
-    // Simulação de IP
-    _logger.debug("Obtendo endereço IP...");
-    return "192.168.1.100";
+    static String ipString;
+    ipString = WiFi.localIP().toString();
+    return ipString.c_str();
 }
 
 void ESP32WiFi::setCredentials(const char* ssid, const char* password) {

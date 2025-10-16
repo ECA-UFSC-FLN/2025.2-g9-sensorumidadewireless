@@ -21,7 +21,7 @@ public:
     void deepSleep(unsigned long microseconds) override {
         // No teste, reduzimos o deep sleep para 100ms para acelerar a execução
         std::cout << "[MockHardware] Deep sleep for " << microseconds << " microseconds\n";
-        usleep(100000); // 100ms
+        usleep(microseconds); // 100ms
     }
 
     unsigned long generateRandomNumber() override {

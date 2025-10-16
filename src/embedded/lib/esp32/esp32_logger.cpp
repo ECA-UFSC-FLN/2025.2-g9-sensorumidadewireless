@@ -2,7 +2,12 @@
 #include <Arduino.h>
 
 ESP32Logger::ESP32Logger(unsigned long baudRate) {
-    Serial.begin(baudRate);
+    // Inicializa Serial apenas se ainda não foi inicializado
+    if (!Serial) {
+        Serial.begin(baudRate);
+        // Aguarda um pouco para o Serial ficar pronto
+        delay(100);
+    }
 }
 
 void ESP32Logger::debug(const char* message) {

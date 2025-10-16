@@ -19,11 +19,20 @@ ESP32MQTTClient mqtt(MQTT_SERVER, MQTT_PORT);
 MainController* controller = nullptr;
 ESP32JsonSerializer json;
 
+// NOTA SOBRE DEEP SLEEP:
+// Após acordar do deep sleep, o ESP32 reinicia completamente.
+// Para manter estado entre ciclos de sleep, você precisará:
+// 1. Usar RTC memory (RTC_DATA_ATTR)
+// 2. Verificar esp_reset_reason() no setup()
+// 3. Restaurar o estado da máquina conforme necessário
+
 
 void setup() {
-    // Inicializa serial para logging
-    Serial.begin(115200);
-    while (!Serial) delay(100);
+    // Inicializa serial para logging (não precisa aqui, logger já faz isso)
+    // Serial.begin(115200);  // REMOVIDO - Logger já inicializa
+    // while (!Serial) delay(100);
+    
+    delay(1000); // Aguarda estabilização do sistema
     
     // Configura e conecta WiFi
     wifi.setCredentials(WIFI_SSID, WIFI_PASSWORD);
@@ -32,12 +41,17 @@ void setup() {
         return;
     }
 
-    // Configura MQTT
-    // mqtt.configure();
-    // if (!mqtt.connect("ESP32_Client")) {
-    //     logger.error("Falha fatal - Não foi possível conectar ao MQTT");
-    //     return;
-    // }
+    // Aguarda WiFi estabilizar completamente antes de usar TCP/IP
+    delay(2000);
+    logger.info("WiFi estabilizado. Conectando ao MQTT...");
+
+    // Conecta MQTT após WiFi estar estável
+    if (!mqtt.connect("ESP32_Client")) {
+        logger.error("Falha ao conectar ao MQTT no setup");
+        // Não retorna - vai tentar reconectar no loop
+    } else {
+        logger.info("MQTT conectado com sucesso!");
+    }
     
     // Inicializa controlador principal
     controller = new MainController(hardware, mqtt, json, logger);
@@ -45,19 +59,39 @@ void setup() {
 }
 
 void loop() {
-    // Verifica conexões
+    // Verifica conexão WiFi primeiro
     if (!wifi.isConnected()) {
         logger.error("Conexão WiFi perdida. Reconectando...");
         wifi.connect();
+        
+        // Aguarda WiFi reconectar antes de tentar MQTT
+        if (wifi.isConnected()) {
+            delay(2000); // Aguarda estabilização
+            logger.info("WiFi reconectado. Tentando MQTT...");
+        } else {
+            delay(5000); // Aguarda antes de tentar novamente
+            return; // Não tenta MQTT sem WiFi
+        }
     }
     
-    if (!mqtt.isConnected()) {
+    // Só tenta MQTT se WiFi estiver conectado
+    if (wifi.isConnected() && !mqtt.isConnected()) {
         logger.error("Conexão MQTT perdida. Reconectando...");
-        mqtt.connect("ESP32_Client");
+        
+        // Aguarda um pouco antes de reconectar MQTT
+        static unsigned long lastMqttAttempt = 0;
+        unsigned long now = millis();
+        
+        if (now - lastMqttAttempt > 5000) { // Tenta a cada 5 segundos
+            if (mqtt.connect("ESP32_Client")) {
+                logger.info("MQTT reconectado com sucesso!");
+            }
+            lastMqttAttempt = now;
+        }
     }
     
-    // Executa loop do controlador
-    if (controller) {
+    // Executa loop do controlador apenas se ambos estiverem conectados
+    if (controller && wifi.isConnected() && mqtt.isConnected()) {
         controller->loop();
     }
     
