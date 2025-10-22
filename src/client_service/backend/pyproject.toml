@@ -7,6 +7,7 @@ dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.4.2",
+    "sqlalchemy>=2.0.44",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,13 @@ ignore = [
     "INP001",      # Ignore missing __init__.py
     "TD002",       # Ignore TODO author requirement
     "TD003",       # Ignore TODO link requirement
+    "FA102",
+    "BLE001",
+    "TRY003",
+    "EM101",
+    "TRY300",
+    "FA100"
+
 ]
 
 [tool.ruff.lint.per-file-ignores]

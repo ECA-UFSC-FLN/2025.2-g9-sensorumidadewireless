@@ -4,18 +4,46 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import health
+from .routers import database_example, health
+from .services.database.init_db import close_database, initialize_database
+from .services.database.psg_client import PSGClient
 from .utils.logger import logger
+
+db_client: PSGClient | None = None
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator:
-    """Application lifespan handler."""
+    """
+    Lifespan handler for the FastAPI application.
+
+    Args:
+        _ (FastAPI): The FastAPI application instance.
+
+    Raises:
+        RuntimeError: If the database initialization fails.
+    """
+    global db_client
+
     # Startup
     logger.info("Starting up dashboard backend...")
+
+    # Initialize database
+    db_client = initialize_database()
+    if not db_client:
+        raise RuntimeError(
+            "Failed to initialize database. Application may not work correctly."
+        )
+
     yield
+
     # Shutdown
     logger.info("Shutting down dashboard backend...")
+
+    # Close database connection
+    if db_client:
+        close_database(db_client)
+        logger.info("Database connection closed")
 
 
 app = FastAPI(
@@ -36,6 +64,17 @@ app.add_middleware(
 
 # Routers
 app.include_router(health.router, prefix="/api")
+app.include_router(database_example.router, prefix="/api")
+
+
+def get_database_client() -> PSGClient | None:
+    """
+    Get the database client instance.
+
+    Returns:
+        PSGClient | None: The database client instance.
+    """
+    return db_client
 
 
 @app.get("/")
@@ -47,12 +86,3 @@ async def root() -> dict[str, str]:
         dict[str, str]: A message indicating the API name
     """
     return {"message": "Estufa Dashboard API"}
-
-
-# TODO:
-# definir banco de dados estufas - estufa id -> processos processo_id, estufa_id, medicoes -> processo_id (fk), device_id, umidade, energia
-# precisa endpoint para iniciar processo (e criar nova entrada no banco de dados)
-# precisa endpoint para parar processo
-# precisa um worker para fazer as leituras do mqtt
-# precisa de um banco de dados para por processo iniciado adicionar as medições no banco de dados
-# precis
