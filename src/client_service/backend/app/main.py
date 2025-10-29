@@ -4,18 +4,41 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import health
-from .utils.logger import logger
+# Importar configuração de timezone primeiro
+# (deve ser feito antes de outros imports)
+from .config import timezone_config  # noqa: F401
+from .routers import (
+    health_router,
+    measurements_router,
+    processes_router,
+    sensors_router,
+)
+from .services.database.init_db import close_database, initialize_database
+from .services.database.psg_client import PSGClient  # noqa: TC001
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncGenerator:
-    """Application lifespan handler."""
+async def lifespan(app: FastAPI) -> AsyncGenerator:  # noqa: RUF029
+    """
+    Lifespan handler for the FastAPI application.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Raises:
+        RuntimeError: If the database initialization fails.
+    """
     # Startup
-    logger.info("Starting up dashboard backend...")
+    app.state.db_client: PSGClient | None = None
+    app.state.db_client = initialize_database()
+    if not app.state.db_client:
+        raise RuntimeError(
+            "Failed to initialize database.",
+        )
     yield
     # Shutdown
-    logger.info("Shutting down dashboard backend...")
+    if app.state.db_client:
+        close_database(app.state.db_client)
 
 
 app = FastAPI(
@@ -35,7 +58,10 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(health.router, prefix="/api")
+app.include_router(health_router)
+app.include_router(measurements_router)
+app.include_router(processes_router)
+app.include_router(sensors_router)
 
 
 @app.get("/")
@@ -47,12 +73,3 @@ async def root() -> dict[str, str]:
         dict[str, str]: A message indicating the API name
     """
     return {"message": "Estufa Dashboard API"}
-
-
-# TODO:
-# definir banco de dados estufas - estufa id -> processos processo_id, estufa_id, medicoes -> processo_id (fk), device_id, umidade, energia
-# precisa endpoint para iniciar processo (e criar nova entrada no banco de dados)
-# precisa endpoint para parar processo
-# precisa um worker para fazer as leituras do mqtt
-# precisa de um banco de dados para por processo iniciado adicionar as medições no banco de dados
-# precis
