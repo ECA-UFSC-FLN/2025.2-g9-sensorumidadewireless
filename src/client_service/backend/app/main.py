@@ -7,7 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 # Importar configuração de timezone primeiro
 # (deve ser feito antes de outros imports)
 from .config import timezone_config  # noqa: F401
-from .routers import health_router, processes_router, sensors_router
+from .routers import (
+    health_router,
+    measurements_router,
+    processes_router,
+    sensors_router,
+)
 from .services.database.init_db import close_database, initialize_database
 from .services.database.psg_client import PSGClient  # noqa: TC001
 
@@ -54,6 +59,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(health_router)
+app.include_router(measurements_router)
 app.include_router(processes_router)
 app.include_router(sensors_router)
 

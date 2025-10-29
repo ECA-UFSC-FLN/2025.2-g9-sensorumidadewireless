@@ -31,7 +31,12 @@ from app.utils.logger import logger
 
 class PSGClient(IDBClient):
     def __init__(
-        self, host: str, port: int, database: str, user: str, password: str,
+        self,
+        host: str,
+        port: int,
+        database: str,
+        user: str,
+        password: str,
     ) -> None:
         self.host = host
         self.port = port
@@ -58,7 +63,9 @@ class PSGClient(IDBClient):
 
             # Criar SessionLocal
             self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine,
+                autocommit=False,
+                autoflush=False,
+                bind=self.engine,
             )
 
             # Testar conexão
@@ -153,7 +160,8 @@ class PSGClient(IDBClient):
             return False
 
     def get_all_measurements_from_process_id(
-        self, process_id: int,
+        self,
+        process_id: int,
     ) -> list[PydanticMeasurement]:
         """
         Get all measurements from a process id.
@@ -226,7 +234,8 @@ class PSGClient(IDBClient):
             return []
 
     def create_new_process(
-        self, process: PydanticProcess,
+        self,
+        process: PydanticProcess,
     ) -> PydanticProcess | None:
         """Create a new process.
 
@@ -420,3 +429,118 @@ class PSGClient(IDBClient):
         except SQLAlchemyError as e:
             logger.error(f"Failed to get sensor {sensor_id}: {e}")
             return None
+
+    def delete_process(self, process_id: int) -> bool:
+        """Delete a process and all related data.
+
+        Deletes in cascade order: measurements → sensor_registry → process.
+
+        Args:
+            process_id (int): The id of the process to delete.
+
+        Returns:
+            bool: True if the process was deleted successfully,
+            False otherwise.
+        """
+        try:
+            session = self.get_session()
+            # Verify process exists
+            process = (
+                session.query(Process).filter(Process.id == process_id).first()
+            )
+            if not process:
+                logger.warning(f"Process {process_id} not found")
+                return False
+
+            # Delete measurements first
+            session.query(Measurement).filter(
+                Measurement.process_id == process_id,
+            ).delete()
+
+            # Delete sensor_registry
+            session.query(SensorRegistry).filter(
+                SensorRegistry.process_id == process_id,
+            ).delete()
+
+            # Delete process
+            session.delete(process)
+            session.commit()
+            logger.info(f"Deleted process {process_id} and all related data")
+            return True
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to delete process {process_id}: {e}")
+            session.rollback()
+            return False
+
+    def delete_sensor(self, sensor_id: int) -> bool:
+        """Delete a sensor and all related measurements.
+
+        Deletes in cascade order: measurements → sensor_registry.
+
+        Args:
+            sensor_id (int): The id of the sensor to delete.
+
+        Returns:
+            bool: True if the sensor was deleted successfully,
+            False otherwise.
+        """
+        try:
+            session = self.get_session()
+            # Verify sensor exists
+            sensor = (
+                session.query(SensorRegistry)
+                .filter(SensorRegistry.sensor_id == sensor_id)
+                .first()
+            )
+            if not sensor:
+                logger.warning(f"Sensor {sensor_id} not found")
+                return False
+
+            # Delete measurements first
+            session.query(Measurement).filter(
+                Measurement.sensor_id == sensor_id,
+            ).delete()
+
+            # Delete sensor_registry
+            session.delete(sensor)
+            session.commit()
+            logger.info(
+                f"Deleted sensor {sensor_id} and all related measurements",
+            )
+            return True
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to delete sensor {sensor_id}: {e}")
+            session.rollback()
+            return False
+
+    def delete_measurement(self, measurement_id: int) -> bool:
+        """Delete a measurement by id.
+
+        Args:
+            measurement_id (int): The id of the measurement to delete.
+
+        Returns:
+            bool: True if the measurement was deleted successfully,
+            False otherwise.
+        """
+        try:
+            session = self.get_session()
+            # Verify measurement exists
+            measurement = (
+                session.query(Measurement)
+                .filter(Measurement.id == measurement_id)
+                .first()
+            )
+            if not measurement:
+                logger.warning(f"Measurement {measurement_id} not found")
+                return False
+
+            # Delete measurement
+            session.delete(measurement)
+            session.commit()
+            logger.info(f"Deleted measurement {measurement_id}")
+            return True
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to delete measurement {measurement_id}: {e}")
+            session.rollback()
+            return False

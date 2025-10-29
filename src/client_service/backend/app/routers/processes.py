@@ -154,3 +154,37 @@ async def get_measurements(
         )
 
     return db_client.get_all_measurements_from_process_id(process_id)
+
+
+@router.delete("/{process_id}")
+async def delete_process(
+    process_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> Response:
+    """
+    Delete a process and all related data.
+
+    Args:
+        process_id (int): The id of the process to delete.
+
+    Returns:
+        Response: Success response (204 No Content).
+
+    Raises:
+        HTTPException: If process not found or deletion fails.
+    """
+    # Check if process exists
+    process = db_client.get_process_by_id(process_id)
+    if not process:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Process {process_id} not found",
+        )
+
+    success = db_client.delete_process(process_id)
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete process",
+        )
+    return Response(status_code=204)

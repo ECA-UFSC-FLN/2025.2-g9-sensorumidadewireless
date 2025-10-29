@@ -47,7 +47,8 @@ class IDBClient(ABC):
 
     @abstractmethod
     def create_new_process(
-        self, process: PydanticProcess,
+        self,
+        process: PydanticProcess,
     ) -> PydanticProcess | None:
         """Create a new process."""
 
@@ -77,3 +78,15 @@ class IDBClient(ABC):
     @abstractmethod
     def get_sensor_by_id(self, sensor_id: int) -> PydanticSensorRegistry | None:
         """Get a sensor by id."""
+
+    @abstractmethod
+    def delete_process(self, process_id: int) -> bool:
+        """Delete a process and all related data."""
+
+    @abstractmethod
+    def delete_sensor(self, sensor_id: int) -> bool:
+        """Delete a sensor and all related measurements."""
+
+    @abstractmethod
+    def delete_measurement(self, measurement_id: int) -> bool:
+        """Delete a measurement by id."""

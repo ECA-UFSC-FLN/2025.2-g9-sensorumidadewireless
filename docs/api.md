@@ -70,6 +70,16 @@ Lista todas as medições de um processo.
 
 **Resposta:** `list[Measurement]`
 
+#### `DELETE /processes/{process_id}`
+Deleta um processo e todos os dados relacionados (medições e sensores).
+
+**Parâmetros:**
+- `process_id` (path): ID do processo
+
+**Resposta:** `204 No Content` (sucesso) ou `404 Not Found`
+
+**Nota:** Esta operação deleta o processo e todos os dados relacionados: todas as medições do processo e todos os sensores registrados para o processo.
+
 ---
 
 ### Sensores
@@ -89,6 +99,30 @@ Lista todas as medições de um sensor.
 - `sensor_id` (path): ID do sensor
 
 **Resposta:** `list[Measurement]`
+
+#### `DELETE /sensors/{sensor_id}`
+Deleta um sensor e todas as suas medições.
+
+**Parâmetros:**
+- `sensor_id` (path): ID do sensor
+
+**Resposta:** `204 No Content` (sucesso) ou `404 Not Found`
+
+**Nota:** Esta operação deleta o sensor do registro e todas as medições associadas ao sensor.
+
+---
+
+### Medições
+
+#### `DELETE /measurements/{measurement_id}`
+Deleta uma medição específica.
+
+**Parâmetros:**
+- `measurement_id` (path): ID da medição
+
+**Resposta:** `204 No Content` (sucesso) ou `404 Not Found`
+
+**Nota:** Esta operação deleta apenas a medição especificada, sem afetar o processo ou sensor associados.
 
 ---
 
