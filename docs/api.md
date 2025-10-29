@@ -10,7 +10,8 @@ http://localhost:8007
 
 ## Documentação Interativa
 
-Swagger UI: `http://localhost:8007/docs`  
+Swagger UI: `http://localhost:8007/docs`
+Redoc: `http://localhost:8007/redoc`
 
 ## Endpoints
 

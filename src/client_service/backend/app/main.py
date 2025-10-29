@@ -9,11 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import timezone_config  # noqa: F401
 from .routers import health_router, processes_router, sensors_router
 from .services.database.init_db import close_database, initialize_database
-from .services.database.psg_client import PSGClient
+from .services.database.psg_client import PSGClient  # noqa: TC001
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator:
+async def lifespan(app: FastAPI) -> AsyncGenerator:  # noqa: RUF029
     """
     Lifespan handler for the FastAPI application.
 
@@ -56,16 +56,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(processes_router)
 app.include_router(sensors_router)
-
-
-def get_database_client() -> PSGClient | None:
-    """
-    Get the database client instance.
-
-    Returns:
-        PSGClient | None: The database client instance.
-    """
-    return app.state.db_client
 
 
 @app.get("/")

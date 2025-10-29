@@ -7,11 +7,12 @@ Author: Klaus Begnis
 Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 """
 
-import datetime
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.config.timezone_config import SAO_PAULO_TZ
+from app.dependencies import get_db_client
+from app.services.database.psg_client import PSGClient
 from app.services.database.tables.measurements import PydanticMeasurement
 from app.services.database.tables.sensor_registry import PydanticSensorRegistry
 
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/sensors", tags=["sensors"])
 @router.get("/{sensor_id}/measurements")
 async def get_measurements_by_sensor_id(
     sensor_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
 ) -> list[PydanticMeasurement]:
     """
     Get all measurements from a sensor.
@@ -31,20 +33,14 @@ async def get_measurements_by_sensor_id(
     Returns:
         list[PydanticMeasurement]: The list of measurements.
     """
-    return [
-        PydanticMeasurement(
-            id=1,
-            process_id=1,
-            sensor_id=1,
-            rh=1,
-            soc=1,
-            timestamp=datetime.datetime.now(SAO_PAULO_TZ),
-        ),
-    ]
+    return db_client.get_all_measurements_from_sensor_id(sensor_id)
 
 
 @router.get("/{sensor_id}")
-async def get_sensor_by_id(sensor_id: int) -> PydanticSensorRegistry:
+async def get_sensor_by_id(
+    sensor_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> PydanticSensorRegistry:
     """
     Get a sensor by id.
 
@@ -53,7 +49,14 @@ async def get_sensor_by_id(sensor_id: int) -> PydanticSensorRegistry:
 
     Returns:
         PydanticSensorRegistry: The sensor.
+
+    Raises:
+        HTTPException: If sensor not found.
     """
-    return PydanticSensorRegistry(
-        process_id=1, sensor_id=1, position="Position 1",
-    )
+    sensor = db_client.get_sensor_by_id(sensor_id)
+    if not sensor:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Sensor {sensor_id} not found",
+        )
+    return sensor

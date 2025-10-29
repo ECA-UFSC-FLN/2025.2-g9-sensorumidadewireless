@@ -33,23 +33,35 @@ class IDBClient(ABC):
 
     @abstractmethod
     def get_all_measurements_from_process_id(
-        self, process_id: int,
+        self,
+        process_id: int,
     ) -> list[PydanticMeasurement]:
         """Get all measurements from a process id."""
 
     @abstractmethod
     def get_all_measurements_from_sensor_id(
-        self, sensor_id: int,
+        self,
+        sensor_id: int,
     ) -> list[PydanticMeasurement]:
         """Get all measurements from a sensor id."""
 
     @abstractmethod
-    def create_new_process(self, process: PydanticProcess) -> bool:
+    def create_new_process(
+        self, process: PydanticProcess,
+    ) -> PydanticProcess | None:
         """Create a new process."""
 
     @abstractmethod
-    def get_process_by_id(self, process_id: int) -> PydanticProcess:
+    def get_process_by_id(self, process_id: int) -> PydanticProcess | None:
         """Get a process by id."""
+
+    @abstractmethod
+    def get_all_processes(self) -> list[PydanticProcess]:
+        """Get all processes."""
+
+    @abstractmethod
+    def end_process(self, process_id: int) -> bool:
+        """End a process by updating ended_at."""
 
     @abstractmethod
     def register_new_sensor(self, sensor_id: int, process_id: int) -> bool:
@@ -57,6 +69,11 @@ class IDBClient(ABC):
 
     @abstractmethod
     def get_all_sensors_from_process_id(
-        self, process_id: int,
+        self,
+        process_id: int,
     ) -> list[PydanticSensorRegistry]:
         """Get all sensors from a process id."""
+
+    @abstractmethod
+    def get_sensor_by_id(self, sensor_id: int) -> PydanticSensorRegistry | None:
+        """Get a sensor by id."""

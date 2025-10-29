@@ -8,11 +8,14 @@ Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 """
 
 import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.config.timezone_config import SAO_PAULO_TZ
+from app.dependencies import get_db_client
 from app.models.processes import CreateProcessRequest
+from app.services.database.psg_client import PSGClient
 from app.services.database.tables.measurements import PydanticMeasurement
 from app.services.database.tables.processes import PydanticProcess
 
@@ -20,25 +23,23 @@ router = APIRouter(prefix="/processes", tags=["processes"])
 
 
 @router.get("/")
-async def get_processes() -> list[PydanticProcess]:
+async def get_processes(
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> list[PydanticProcess]:
     """
     Get all processes.
 
     Returns:
         list[PydanticProcess]: The list of processes.
     """
-    return [
-        PydanticProcess(
-            id=1,
-            name="Process 1",
-            started_at=datetime.datetime.now(SAO_PAULO_TZ),
-            ended_at=datetime.datetime.now(SAO_PAULO_TZ),
-        ),
-    ]
+    return db_client.get_all_processes()
 
 
 @router.get("/{process_id}")
-async def get_process_by_id(process_id: int) -> PydanticProcess:
+async def get_process_by_id(
+    process_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> PydanticProcess:
     """
     Get a process by id.
 
@@ -47,36 +48,57 @@ async def get_process_by_id(process_id: int) -> PydanticProcess:
 
     Returns:
         PydanticProcess: The process.
+
+    Raises:
+        HTTPException: If process not found.
     """
-    return PydanticProcess(
-        id=1,
-        name="Process 1",
-        started_at=datetime.datetime.now(SAO_PAULO_TZ),
-        ended_at=datetime.datetime.now(SAO_PAULO_TZ),
-    )
+    process = db_client.get_process_by_id(process_id)
+    if not process:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Process {process_id} not found",
+        )
+    return process
 
 
 @router.post("/start")
-async def start_new_process(process_name: str) -> PydanticProcess:
+async def start_new_process(
+    request: CreateProcessRequest,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> PydanticProcess:
     """
     Start a new process.
 
     Args:
-        process_name (str): The name of the process.
+        request (CreateProcessRequest): The request with process name.
 
     Returns:
-        PydanticProcess: The process.
+        PydanticProcess: The created process.
+
+    Raises:
+        HTTPException: If process creation fails.
     """
-    return PydanticProcess(
-        id=1,
-        name="Process 1",
-        started_at=datetime.datetime.now(SAO_PAULO_TZ),
-        ended_at=datetime.datetime.now(SAO_PAULO_TZ),
+    now = datetime.datetime.now(SAO_PAULO_TZ)
+    new_process = PydanticProcess(
+        id=0,  # Will be set by database
+        name=request.name,
+        started_at=now,
+        ended_at=None,
     )
+    created_process = db_client.create_new_process(new_process)
+    if not created_process:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create process",
+        )
+    return created_process
 
 
 @router.post("/end/{process_id}")
-async def end_process(process_id: int) -> Response:
+async def end_process(
+    process_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
+) -> Response:
     """
     End a process.
 
@@ -84,14 +106,32 @@ async def end_process(process_id: int) -> Response:
         process_id (int): The id of the process.
 
     Returns:
-        Response: The response.
+        Response: Success response.
+
+    Raises:
+        HTTPException: If process not found or update fails.
     """
+    # Check if process exists
+    process = db_client.get_process_by_id(process_id)
+    if not process:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Process {process_id} not found",
+        )
+
+    success = db_client.end_process(process_id)
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to end process",
+        )
     return Response(status_code=200)
 
 
 @router.get("/{process_id}/measurements")
 async def get_measurements(
-    process_request: CreateProcessRequest,
+    process_id: int,
+    db_client: Annotated[PSGClient, Depends(get_db_client)],
 ) -> list[PydanticMeasurement]:
     """
     Get all measurements from a process.
@@ -101,14 +141,16 @@ async def get_measurements(
 
     Returns:
         list[PydanticMeasurement]: The list of measurements.
+
+    Raises:
+        HTTPException: If process not found.
     """
-    return [
-        PydanticMeasurement(
-            id=1,
-            process_id=1,
-            sensor_id=1,
-            rh=1,
-            soc=1,
-            timestamp=datetime.datetime.now(SAO_PAULO_TZ),
-        ),
-    ]
+    # Check if process exists
+    process = db_client.get_process_by_id(process_id)
+    if not process:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Process {process_id} not found",
+        )
+
+    return db_client.get_all_measurements_from_process_id(process_id)

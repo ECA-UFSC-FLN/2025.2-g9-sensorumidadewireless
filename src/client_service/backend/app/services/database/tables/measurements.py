@@ -28,7 +28,9 @@ class Measurement(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     process_id = Column(Integer, ForeignKey("processes.id"), nullable=False)
     sensor_id = Column(
-        Integer, ForeignKey("sensor_registry.sensor_id"), nullable=False,
+        Integer,
+        ForeignKey("sensor_registry.sensor_id"),
+        nullable=False,
     )
     rh = Column(Float)
     soc = Column(Float)

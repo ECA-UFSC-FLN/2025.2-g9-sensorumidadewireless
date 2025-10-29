@@ -33,7 +33,11 @@ def get_database_url() -> str:
 
 
 def create_database_if_not_exists(
-    database_name: str, user: str, password: str, host: str, port: int,
+    database_name: str,
+    user: str,
+    password: str,
+    host: str,
+    port: int,
 ) -> bool:
     """
     Create database if it doesn't exist.
@@ -53,7 +57,9 @@ def create_database_if_not_exists(
         # Connect to default postgres database
         default_url = f"postgresql://{user}:{password}@{host}:{port}/postgres"
         engine = create_engine(
-            default_url, echo=False, isolation_level="AUTOCOMMIT",
+            default_url,
+            echo=False,
+            isolation_level="AUTOCOMMIT",
         )
 
         # Check if database exists
@@ -125,7 +131,11 @@ def initialize_database() -> Optional[PSGClient]:
 
         # Create database if it doesn't exist
         if not create_database_if_not_exists(
-            database, user, password, host, port,
+            database,
+            user,
+            password,
+            host,
+            port,
         ):
             logger.error("Failed to create database")
             return None

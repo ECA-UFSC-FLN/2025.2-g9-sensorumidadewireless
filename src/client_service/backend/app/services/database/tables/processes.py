@@ -17,6 +17,7 @@ from app.services.database.tables.base import Base
 
 class Process(Base):
     """Process table."""
+
     __tablename__ = "processes"
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -28,4 +29,4 @@ class PydanticProcess(BaseModel):
     id: int
     name: str
     started_at: datetime.datetime
-    ended_at: datetime.datetime
+    ended_at: datetime.datetime | None

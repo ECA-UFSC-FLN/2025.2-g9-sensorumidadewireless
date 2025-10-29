@@ -7,7 +7,6 @@ Author: Klaus Begnis
 Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 """
 
-
 if __name__ == "__main__":
     import uvicorn
 

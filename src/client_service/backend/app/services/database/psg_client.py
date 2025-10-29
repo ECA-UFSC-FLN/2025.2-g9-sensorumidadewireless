@@ -7,11 +7,16 @@ Author: Klaus Begnis
 Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 """
 
+import datetime
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.services.database.base_client._dbclient import IDBClient
+from app.config.timezone_config import SAO_PAULO_TZ
+from app.services.database.base_client._dbclient import (
+    IDBClient,  # noqa: PLC2701
+)
 from app.services.database.tables.measurements import (
     Measurement,
     PydanticMeasurement,
@@ -26,8 +31,8 @@ from app.utils.logger import logger
 
 class PSGClient(IDBClient):
     def __init__(
-        self, host: str, port: int, database: str, user: str, password: str
-    ):
+        self, host: str, port: int, database: str, user: str, password: str,
+    ) -> None:
         self.host = host
         self.port = port
         self.database = database
@@ -53,7 +58,7 @@ class PSGClient(IDBClient):
 
             # Criar SessionLocal
             self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
+                autocommit=False, autoflush=False, bind=self.engine,
             )
 
             # Testar conexão
@@ -123,7 +128,8 @@ class PSGClient(IDBClient):
             measurement (PydanticMeasurement): The measurement to add.
 
         Returns:
-            bool: True if the measurement was added successfully, False otherwise.
+            bool: True if the measurement was added successfully,
+            False otherwise.
         """
         try:
             session = self.get_session()
@@ -147,7 +153,7 @@ class PSGClient(IDBClient):
             return False
 
     def get_all_measurements_from_process_id(
-        self, process_id: int
+        self, process_id: int,
     ) -> list[PydanticMeasurement]:
         """
         Get all measurements from a process id.
@@ -178,7 +184,7 @@ class PSGClient(IDBClient):
             ]
         except SQLAlchemyError as e:
             logger.error(
-                f"Failed to get measurements for process {process_id}: {e}"
+                f"Failed to get measurements for process {process_id}: {e}",
             )
             return []
 
@@ -215,18 +221,21 @@ class PSGClient(IDBClient):
             ]
         except SQLAlchemyError as e:
             logger.error(
-                f"Failed to get measurements for sensor {sensor_id}: {e}"
+                f"Failed to get measurements for sensor {sensor_id}: {e}",
             )
             return []
 
-    def create_new_process(self, process: PydanticProcess) -> bool:
+    def create_new_process(
+        self, process: PydanticProcess,
+    ) -> PydanticProcess | None:
         """Create a new process.
 
         Args:
             process (PydanticProcess): The process to create.
 
         Returns:
-            bool: True if the process was created successfully, False otherwise.
+            PydanticProcess | None: The created process with ID,
+            or None if failed.
         """
         try:
             session = self.get_session()
@@ -237,21 +246,27 @@ class PSGClient(IDBClient):
             )
             session.add(db_process)
             session.commit()
+            session.refresh(db_process)
             logger.info(f"Created new process: {process.name}")
-            return True
+            return PydanticProcess(
+                id=db_process.id,
+                name=db_process.name,
+                started_at=db_process.started_at,
+                ended_at=db_process.ended_at,
+            )
         except SQLAlchemyError as e:
             logger.error(f"Failed to create process: {e}")
             session.rollback()
-            return False
+            return None
 
-    def get_process_by_id(self, process_id: int) -> PydanticProcess:
+    def get_process_by_id(self, process_id: int) -> PydanticProcess | None:
         """Get a process by id.
 
         Args:
             process_id (int): The id of the process.
 
         Returns:
-            PydanticProcess: The process.
+            PydanticProcess | None: The process, or None if not found.
         """
         try:
             session = self.get_session()
@@ -270,6 +285,55 @@ class PSGClient(IDBClient):
             logger.error(f"Failed to get process {process_id}: {e}")
             return None
 
+    def get_all_processes(self) -> list[PydanticProcess]:
+        """Get all processes.
+
+        Returns:
+            list[PydanticProcess]: The list of processes.
+        """
+        try:
+            session = self.get_session()
+            processes = session.query(Process).all()
+            return [
+                PydanticProcess(
+                    id=p.id,
+                    name=p.name,
+                    started_at=p.started_at,
+                    ended_at=p.ended_at,
+                )
+                for p in processes
+            ]
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get all processes: {e}")
+            return []
+
+    def end_process(self, process_id: int) -> bool:
+        """End a process by updating ended_at.
+
+        Args:
+            process_id (int): The id of the process.
+
+        Returns:
+            bool: True if the process was ended successfully, False otherwise.
+        """
+        try:
+            session = self.get_session()
+            process = (
+                session.query(Process).filter(Process.id == process_id).first()
+            )
+            if not process:
+                logger.warning(f"Process {process_id} not found")
+                return False
+
+            process.ended_at = datetime.datetime.now(SAO_PAULO_TZ)
+            session.commit()
+            logger.info(f"Ended process {process_id}")
+            return True
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to end process {process_id}: {e}")
+            session.rollback()
+            return False
+
     def register_new_sensor(self, sensor_id: int, process_id: int) -> bool:
         """Register a new sensor.
 
@@ -278,7 +342,8 @@ class PSGClient(IDBClient):
             process_id (int): The id of the process.
 
         Returns:
-            bool: True if the sensor was registered successfully, False otherwise.
+            bool: True if the sensor was registered successfully,
+            False otherwise.
         """
         try:
             session = self.get_session()
@@ -290,7 +355,7 @@ class PSGClient(IDBClient):
             session.add(db_sensor)
             session.commit()
             logger.info(
-                f"Registered sensor {sensor_id} for process {process_id}"
+                f"Registered sensor {sensor_id} for process {process_id}",
             )
             return True
         except SQLAlchemyError as e:
@@ -328,3 +393,30 @@ class PSGClient(IDBClient):
         except SQLAlchemyError as e:
             logger.error(f"Failed to get sensors for process {process_id}: {e}")
             return []
+
+    def get_sensor_by_id(self, sensor_id: int) -> PydanticSensorRegistry | None:
+        """Get a sensor by id.
+
+        Args:
+            sensor_id (int): The id of the sensor.
+
+        Returns:
+            PydanticSensorRegistry | None: The sensor, or None if not found.
+        """
+        try:
+            session = self.get_session()
+            sensor = (
+                session.query(SensorRegistry)
+                .filter(SensorRegistry.sensor_id == sensor_id)
+                .first()
+            )
+            if sensor:
+                return PydanticSensorRegistry(
+                    process_id=sensor.process_id,
+                    sensor_id=sensor.sensor_id,
+                    position=sensor.position,
+                )
+            return None
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get sensor {sensor_id}: {e}")
+            return None
