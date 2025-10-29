@@ -17,8 +17,8 @@ class SensorRegistry(Base):
     """Sensor registry table."""
 
     __tablename__ = "sensor_registry"
-    process_id = Column(Integer, ForeignKey("processes.id"), primary_key=True)
     sensor_id = Column(Integer, primary_key=True)
+    process_id = Column(Integer, ForeignKey("processes.id"))
     position = Column(String)
 
 

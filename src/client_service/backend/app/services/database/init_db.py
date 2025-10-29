@@ -9,8 +9,9 @@ Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 
 import os
 from typing import Optional
+from urllib.parse import urlparse
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.services.database.psg_client import PSGClient
@@ -27,8 +28,57 @@ def get_database_url() -> str:
     """
     return os.getenv(
         "DATABASE_URL",
-        "postgresql://estufa_user:estufa_password@localhost:5432/estufa_db",
+        "postgresql://root:root@localhost:5432/estufa",
     )
+
+
+def create_database_if_not_exists(
+    database_name: str, user: str, password: str, host: str, port: int,
+) -> bool:
+    """
+    Create database if it doesn't exist.
+
+    Args:
+        database_name (str): Name of the database to create.
+        user (str): Database user.
+        password (str): Database password.
+        host (str): Database host.
+        port (int): Database port.
+
+    Returns:
+        bool: True if the database exists or was created successfully,
+        False otherwise.
+    """
+    try:
+        # Connect to default postgres database
+        default_url = f"postgresql://{user}:{password}@{host}:{port}/postgres"
+        engine = create_engine(
+            default_url, echo=False, isolation_level="AUTOCOMMIT",
+        )
+
+        # Check if database exists
+        with engine.connect() as conn:
+            result = conn.execute(
+                text(
+                    "SELECT 1 FROM pg_database WHERE datname = :database_name",
+                ),
+                {"database_name": database_name},
+            )
+            exists = result.fetchone() is not None
+
+            if not exists:
+                # Create database (must be outside transaction)
+                conn.execute(text(f'CREATE DATABASE "{database_name}"'))
+                logger.info(f"Created database '{database_name}'")
+            else:
+                logger.info(f"Database '{database_name}' already exists")
+
+        engine.dispose()
+        return True
+
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to create database: {e}")
+        return False
 
 
 def create_database_tables() -> bool:
@@ -62,19 +112,23 @@ def initialize_database() -> Optional[PSGClient]:
          successful, None otherwise.
     """
     try:
-        # Parse database URL
+        # Parse database URL using urllib.parse
         database_url = get_database_url()
+        parsed = urlparse(database_url)
 
-        # Extract connection parameters from URL
-        # Format: postgresql://user:password@host:port/database
-        url_parts = database_url.replace("postgresql://", "").split("/")
-        auth_part = url_parts[0]
-        database = url_parts[1]
+        # Extract connection parameters from parsed URL
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 5432
+        database = parsed.path.lstrip("/") or "estufa"
+        user = parsed.username or "root"
+        password = parsed.password or "root"
 
-        user, password_host = auth_part.split(":")
-        password, host_port = password_host.split("@")
-        host, port = host_port.split(":")
-        port = int(port)
+        # Create database if it doesn't exist
+        if not create_database_if_not_exists(
+            database, user, password, host, port,
+        ):
+            logger.error("Failed to create database")
+            return None
 
         # Create PSGClient instance
         db_client = PSGClient(
