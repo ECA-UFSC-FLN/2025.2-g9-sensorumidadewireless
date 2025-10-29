@@ -4,7 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import health_router
+# Importar configuração de timezone primeiro
+# (deve ser feito antes de outros imports)
+from .config import timezone_config  # noqa: F401
+from .routers import health_router, processes_router, sensors_router
 from .services.database.init_db import close_database, initialize_database
 from .services.database.psg_client import PSGClient
 
@@ -50,7 +53,9 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(health_router, prefix="/api")
+app.include_router(health_router)
+app.include_router(processes_router)
+app.include_router(sensors_router)
 
 
 def get_database_client() -> PSGClient | None:
