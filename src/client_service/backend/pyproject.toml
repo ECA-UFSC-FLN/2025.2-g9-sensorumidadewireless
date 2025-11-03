@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.4.2",
     "sqlalchemy>=2.0.44",
     "psycopg2-binary>=2.9.9",
+    "paho-mqtt>=2.1.0",
 ]
 
 [project.optional-dependencies]
@@ -47,7 +48,8 @@ ignore = [
     "TRY003",
     "EM101",
     "TRY300",
-    "FA100"
+    "FA100",
+    "COM812",      # Conflicts with formatter
 
 ]
 
