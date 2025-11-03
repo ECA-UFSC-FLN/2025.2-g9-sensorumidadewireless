@@ -13,11 +13,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.config.timezone_config import SAO_PAULO_TZ
-from app.dependencies import get_db_client
+from app.dependencies import get_db_client, get_mqtt_publisher
 from app.models.processes import CreateProcessRequest
 from app.services.database.psg_client import PSGClient
 from app.services.database.tables.measurements import PydanticMeasurement
 from app.services.database.tables.processes import PydanticProcess
+from app.services.mqtt.interfaces import IMQTTPublisher
 
 router = APIRouter(prefix="/processes", tags=["processes"])
 
@@ -65,6 +66,7 @@ async def get_process_by_id(
 async def start_new_process(
     request: CreateProcessRequest,
     db_client: Annotated[PSGClient, Depends(get_db_client)],
+    mqtt: Annotated[IMQTTPublisher, Depends(get_mqtt_publisher)],
 ) -> PydanticProcess:
     """
     Start a new process.
@@ -91,6 +93,10 @@ async def start_new_process(
             status_code=500,
             detail="Failed to create process",
         )
+
+    # Publish command to start measurements
+    mqtt.publish_process_command("iniciar")
+
     return created_process
 
 
@@ -98,6 +104,7 @@ async def start_new_process(
 async def end_process(
     process_id: int,
     db_client: Annotated[PSGClient, Depends(get_db_client)],
+    mqtt: Annotated[IMQTTPublisher, Depends(get_mqtt_publisher)],
 ) -> Response:
     """
     End a process.
@@ -125,6 +132,10 @@ async def end_process(
             status_code=500,
             detail="Failed to end process",
         )
+
+    # Publish command to finalize measurements
+    mqtt.publish_process_command("finalizar")
+
     return Response(status_code=200)
 
 

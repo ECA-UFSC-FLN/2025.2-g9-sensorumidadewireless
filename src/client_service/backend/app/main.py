@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -15,6 +16,8 @@ from .routers import (
 )
 from .services.database.init_db import close_database, initialize_database
 from .services.database.psg_client import PSGClient  # noqa: TC001
+from .services.mqtt.consumer import PahoMQTTConsumer
+from .services.mqtt.publisher import PahoMQTTPublisher
 
 
 @asynccontextmanager
@@ -35,8 +38,39 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:  # noqa: RUF029
         raise RuntimeError(
             "Failed to initialize database.",
         )
+
+    # Initialize MQTT Publisher
+    # Use environment variable or default to localhost for local development
+    mqtt_broker_host = os.getenv("MQTT_BROKER_HOST", "localhost")
+    mqtt_broker_port = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+
+    app.state.mqtt_publisher = PahoMQTTPublisher(
+        mqtt_broker_host,
+        mqtt_broker_port,
+    )
+    if not app.state.mqtt_publisher.connect():
+        raise RuntimeError("Failed to connect MQTT Publisher.")
+
+    # Initialize MQTT Consumer
+    app.state.mqtt_consumer = PahoMQTTConsumer(
+        app.state.db_client,
+        app.state.mqtt_publisher,
+        mqtt_broker_host,
+        mqtt_broker_port,
+    )
+    if not app.state.mqtt_consumer.connect():
+        raise RuntimeError("Failed to connect MQTT Consumer.")
+
+    # Start consumer thread
+    app.state.mqtt_consumer.start()
+
     yield
+
     # Shutdown
+    if hasattr(app.state, "mqtt_consumer"):
+        app.state.mqtt_consumer.stop()
+    if hasattr(app.state, "mqtt_publisher"):
+        app.state.mqtt_publisher.disconnect()
     if app.state.db_client:
         close_database(app.state.db_client)
 
