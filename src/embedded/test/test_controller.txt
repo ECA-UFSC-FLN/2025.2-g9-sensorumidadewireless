@@ -37,7 +37,7 @@ void simulateProcessCommands(MainController& controller, MockMQTT& mqtt) {
     
     // Simulate process start command
     mqtt.simulateMessage("sensores/processo", "iniciar");
-    std::cout << "Measurement count: " << measurementCount << std::endl;
+    
     // Wait until we get exactly 3 measurements
     while (measurementCount < 3) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
