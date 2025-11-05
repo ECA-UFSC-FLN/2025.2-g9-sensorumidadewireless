@@ -97,9 +97,9 @@ classDiagram
 stateDiagram
     direction TB
     [*] --> ConexaoMQTT
-    ConexaoMQTT --> BindID
-    BindID --> Aguarde: ID recebido do broker
-    Aguarde --> Medicao: Processo iniciado
+    ConexaoMQTT --> Aguarde
+    Aguarde --> BindID: ID recebido do broker
+    BindID --> Medicao: Processo iniciado
     Medicao --> DeepSleep
     DeepSleep --> Medicao: Acorda do deep sleep
     Medicao --> Cleanup: Processo finalizado
