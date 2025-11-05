@@ -2,12 +2,16 @@
 #define ESP32_MQTT_H
 
 #include "../comm/mqtt_interface.h"
-#include <PubSubClient.h>
-#include <WiFiClient.h>
+#include <stdint.h>
+
+// Forward declarations
+class WiFiClient;
+class PubSubClient;
 
 class ESP32MQTTClient : public IMQTTClient {
 public:
     ESP32MQTTClient(const char* server, int port);
+    ~ESP32MQTTClient();
     
     bool connect(const char* clientId) override;
     bool publish(const char* topic, const char* payload) override;
@@ -19,9 +23,9 @@ public:
 private:
     const char* server;
     int port;
-    WiFiClient wifiClient;
-    PubSubClient mqttClient;
-    static void internalCallback(char* topic, byte* payload, unsigned int length);
+    WiFiClient* wifiClient;      // Ponteiros para permitir forward declaration
+    PubSubClient* mqttClient;    // Ponteiros para permitir forward declaration
+    static void internalCallback(char* topic, uint8_t* payload, unsigned int length);
     static MQTTCallback userCallback;
 };
 

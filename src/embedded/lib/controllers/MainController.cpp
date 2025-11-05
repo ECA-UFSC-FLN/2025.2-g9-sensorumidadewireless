@@ -131,8 +131,11 @@ void MainController::handleMedicao() {
 
 void MainController::handleDeepSleep() {
     logger.info("[SLEEP] Entrando em deep sleep por 10s...");
+    mqtt.publish(TOPICO_STATUS, "sleeping");
+    hardware.delay(100); // Aguarda envio da mensagem
+    
     hardware.deepSleep(10 * 1000000);
-    // Após acordar do deep sleep, volta para o estado de medição
+    
     estadoAtual = MEDICAO;
 }
 

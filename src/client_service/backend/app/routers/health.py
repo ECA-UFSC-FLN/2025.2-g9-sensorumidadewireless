@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from app.models.health import HealthResponse
 from app.utils.logger import logger
 
-router = APIRouter()
+router = APIRouter(tags=["health"])
 start_time = time.time()
 
 
