@@ -6,9 +6,9 @@
 #include "../lib/esp32/esp32_json.h"
 
 // Configurações
-const char* WIFI_SSID = "wifi";
-const char* WIFI_PASSWORD = "senha";
-const char* MQTT_SERVER = "127.0.0.1";
+const char* WIFI_SSID = "Gelain";
+const char* WIFI_PASSWORD = "gabriel12345";
+const char* MQTT_SERVER = "172.20.10.4";
 const int MQTT_PORT = 1883;
 
 // Instâncias
@@ -36,7 +36,7 @@ void setup() {
     // mqtt.configure();
     // if (!mqtt.connect("ESP32_Client")) {
     //     logger.error("Falha fatal - Não foi possível conectar ao MQTT");
-    //     return;
+    //     return;cd 
     // }
     
     // Inicializa controlador principal

@@ -3,6 +3,7 @@
 
 #include "../comm/wifi_interface.h"
 #include "../utils/logger_interface.h"
+#include <string>
 
 class ESP32WiFi : public IWiFi {
 public:
@@ -44,8 +45,8 @@ public:
 
 private:
     ILogger& _logger;
-    const char* _ssid;
-    const char* _password;
+    std::string _ssid;
+    std::string _password;
 };
 
 #endif // ESP32_WIFI_H
