@@ -7,6 +7,10 @@ Author: Klaus Begnis
 Copyright (c) 2025 Estufa Dashboard. All rights reserved.
 """
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 if __name__ == "__main__":
     import uvicorn
 

@@ -36,8 +36,8 @@ public:
     // Estados da máquina de estados
     enum Estado {
         CONEXAO_MQTT,
-        BIND,
         AGUARDE,
+        BIND,
         MEDICAO,
         DEEP_SLEEP,
         CLEANUP,

@@ -79,7 +79,7 @@ void MainController::handleConexaoMQTT() {
         logger.info("Conectado ao MQTT.");
         mqtt.subscribe(TOPICO_PROCESSO);
         mqtt.subscribe(TOPICO_BIND_RESPONSE);
-        estadoAtual = BIND;
+        estadoAtual = AGUARDE;
     } else {
         logger.info("Falha, tentando novamente em 1s...");
         hardware.delay(1000);
@@ -106,7 +106,7 @@ void MainController::handleBind() {
         }
 
         if (bindOk) {
-            estadoAtual = AGUARDE;
+            estadoAtual = MEDICAO;
         } else {
             logger.error("[BIND] Timeout ao aguardar resposta, tentando novamente...");
             hardware.delay(2000);
@@ -116,7 +116,7 @@ void MainController::handleBind() {
 
 void MainController::handleAguarde() {
     if (processoAtivo) {
-        estadoAtual = MEDICAO;
+        estadoAtual = BIND;
     }
 }
 
