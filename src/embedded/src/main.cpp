@@ -19,6 +19,11 @@ ESP32MQTTClient mqtt(MQTT_SERVER, MQTT_PORT);
 MainController* controller = nullptr;
 ESP32JsonSerializer json;
 
+// Variáveis de controle de reconexão
+unsigned long lastWifiReconnectAttempt = 0;
+unsigned long lastMqttReconnectAttempt = 0;
+const unsigned long RECONNECT_INTERVAL = 5000; // 5 segundos
+
 
 void setup() {
     // Inicializa serial para logging
@@ -45,22 +50,47 @@ void setup() {
 }
 
 void loop() {
-    // Verifica conexões
+    unsigned long now = millis();
+    
+    // Verifica e reconecta WiFi se necessário
     if (!wifi.isConnected()) {
-        logger.error("Conexão WiFi perdida. Reconectando...");
-        wifi.connect();
+        if (now - lastWifiReconnectAttempt > RECONNECT_INTERVAL) {
+            logger.info("Tentando reconectar ao WiFi...");
+            if (wifi.connect()) {
+                logger.info("WiFi reconectado com sucesso!");
+                // Reseta a tentativa de reconexão MQTT quando WiFi reconecta
+                lastMqttReconnectAttempt = 0;
+            } else {
+                logger.error("Falha ao reconectar ao WiFi");
+            }
+            lastWifiReconnectAttempt = now;
+        }
+        delay(100);
+        return; // Aguarda WiFi antes de prosseguir
     }
     
+    // Verifica e reconecta MQTT se necessário
     if (!mqtt.isConnected()) {
-        logger.error("Conexão MQTT perdida. Reconectando...");
-        mqtt.connect("ESP32_Client");
+        if (now - lastMqttReconnectAttempt > RECONNECT_INTERVAL) {
+            logger.info("Tentando reconectar ao MQTT...");
+            if (mqtt.connect("ESP32_Client")) {
+                logger.info("MQTT reconectado com sucesso!");
+                // Aqui você pode adicionar novas subscrições se necessário
+            } else {
+                logger.error("Falha ao reconectar ao MQTT");
+            }
+            lastMqttReconnectAttempt = now;
+        }
+    } else {
+        // Só executa o loop MQTT se estiver conectado
+        mqtt.loop();
     }
     
-    // Executa loop do controlador
-    if (controller) {
+    // Executa loop do controlador se as conexões estiverem OK
+    if (controller && wifi.isConnected() && mqtt.isConnected()) {
         controller->loop();
     }
     
-    // Delay para evitar sobrecarga do CPU
+    // Pequeno delay para evitar sobrecarga
     delay(10);
 }
