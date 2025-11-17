@@ -39,7 +39,7 @@ void MainController::handleMQTTCallback(const char* topic, const uint8_t* payloa
     }
     else if (strcmp(topic, TOPICO_BIND_RESPONSE) == 0) {
         MensagemBindResponse response;
-        if (json.deserialize(message, &response)) {
+        if (response.deserialize(message)) {
             if (strcmp(response.req_id, reqId) == 0 && strcmp(response.status, "ok") == 0) {
                 strcpy(idFinal, response.id);
                 bindOk = true;
@@ -63,15 +63,16 @@ StringView MainController::generateUUID() {
 }
 
 void MainController::realizaMedicao() {
-    // Cria um JSON manualmente para a medição
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer),
-             "{\"medicao\": %.2f, \"id\": \"%s\"}",
-             hardware.readAnalog(34),
-             idFinal);
+    MensagemMedicao medicao;
+    medicao.medicao = hardware.readAnalog(34);
+    medicao.soc = 0.0; // Placeholder for battery level
+    strcpy(medicao.id, idFinal);
 
-    mqtt.publish(TOPICO_MEDICAO, buffer);
-    logger.printf("[MEDICAO] %.2f V enviada com ID %s\n", hardware.readAnalog(34), idFinal);
+    char buffer[128];
+    if (medicao.serialize(buffer, sizeof(buffer))) {
+        mqtt.publish(TOPICO_MEDICAO, buffer);
+        logger.printf("[MEDICAO] %.2f V enviada com ID %s\n", medicao.medicao, idFinal);
+    }
 }
 
 void MainController::handleConexaoMQTT() {
@@ -94,27 +95,8 @@ void MainController::handleBind() {
     strcpy(req.req_id, reqId);
     strcpy(req.nome, "esp32_1");
 
-    char debugMessage[128];
-    snprintf(
-        debugMessage,
-        sizeof(debugMessage),
-        "Bind request struct -> req_id=%s nome=%s",
-        req.req_id,
-        req.nome
-    );
-    logger.debug(debugMessage);
-
     char buffer[256];
-    if (json.serialize(&req, buffer, sizeof(buffer))) {
-        char serializedInfo[160];
-        snprintf(
-            serializedInfo,
-            sizeof(serializedInfo),
-            "Bind payload serialized: %s",
-            buffer
-        );
-        logger.debug(serializedInfo);
-
+    if (req.serialize(buffer, sizeof(buffer))) {
         mqtt.publish(TOPICO_BIND_REQUEST, buffer);
         logger.printf("[BIND] Solicitando ID com req_id=%s\n", req.req_id);
 
@@ -165,7 +147,7 @@ void MainController::handleCleanup() {
     strcpy(unbind.id, idFinal);
 
     char buffer[128];
-    if (json.serialize(&unbind, buffer, sizeof(buffer))) {
+    if (unbind.serialize(buffer, sizeof(buffer))) {
         mqtt.publish(TOPICO_UNBIND, buffer);
         logger.printf("[UNBIND] ID %s liberado.\n", unbind.id);
     }
