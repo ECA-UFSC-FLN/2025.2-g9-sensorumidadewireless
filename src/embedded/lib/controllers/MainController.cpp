@@ -33,20 +33,32 @@ void MainController::handleMQTTCallback(const char* topic, const uint8_t* payloa
     memcpy(message, payload, length);
     message[length] = '\0';
 
+    logger.debug("[MQTT-CALLBACK] Received message on topic: %s", topic);
+    logger.debug("[MQTT-CALLBACK] Message content: %s", message);
+
     if (strcmp(topic, TOPICO_PROCESSO) == 0) {
         if (strcmp(message, "iniciar") == 0) processoAtivo = true;
         if (strcmp(message, "finalizar") == 0) processoFinalizado = true;
     }
     else if (strcmp(topic, TOPICO_BIND_RESPONSE) == 0) {
+        logger.debug("[BIND-RESPONSE] Processing bind response...");
         MensagemBindResponse response;
         if (response.deserialize(message)) {
+            logger.debug("[BIND-RESPONSE] Deserialized - req_id: %s, id: %s, status: %s", 
+                        response.req_id, response.id, response.status);
+            logger.debug("[BIND-RESPONSE] Expected req_id: %s", reqId);
+            
             if (strcmp(response.req_id, reqId) == 0 && strcmp(response.status, "ok") == 0) {
                 strcpy(idFinal, response.id);
                 bindOk = true;
                 logger.printf("[BIND] ID atribuído: %s\n", idFinal);
             } else if (strcmp(response.status, "fail") == 0) {
                 logger.error("[BIND] Falha ao obter ID.");
+            } else {
+                logger.debug("[BIND-RESPONSE] req_id mismatch or status not ok");
             }
+        } else {
+            logger.error("[BIND-RESPONSE] Failed to deserialize response");
         }
     }
 }
