@@ -14,6 +14,8 @@ RUN uv sync && uv lock
 # Copy the rest of the application
 COPY client_service/backend/app ./app
 
+COPY client_service/backend/.env /app/.env
+
 # Expose the port the app runs on
 EXPOSE 8007
 

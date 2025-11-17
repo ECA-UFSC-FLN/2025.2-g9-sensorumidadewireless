@@ -50,7 +50,7 @@ void ESP32WiFi::disconnect() {
 bool ESP32WiFi::isConnected() {
 #if defined(ARDUINO_ARCH_ESP32) || defined(ESP32)
     bool connected = (WiFi.status() == WL_CONNECTED);
-    _logger.debug(connected ? "WiFi está conectado" : "WiFi não está conectado");
+    // _logger.debug(connected ? "WiFi está conectado" : "WiFi não está conectado");
     return connected;
 #else
     _logger.debug("Verificando conexão WiFi... (simulado)");

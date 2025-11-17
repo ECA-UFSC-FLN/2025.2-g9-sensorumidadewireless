@@ -18,7 +18,12 @@ void ESP32WiFi::disconnect() {
 
 bool ESP32WiFi::isConnected() {
     // Simulação de status de conexão
-    _logger.debug("Verificando conexão WiFi...");
+    bool connected = (WiFi.status() == WL_CONNECTED);
+    if (connected != _lastConnected) {
+        _lastConnected = connected;
+        // _logger.debug(connected ? "WiFi está conectado" : "WiFi não está conectado");
+    }
+    return connected;
     return true;
 }
 

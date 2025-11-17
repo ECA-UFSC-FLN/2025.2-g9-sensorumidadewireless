@@ -7,8 +7,8 @@
 
 // Configurações
 const char* WIFI_SSID = "Gelain";
-const char* WIFI_PASSWORD = "gabriel12345";
-const char* MQTT_SERVER = "172.20.10.4";
+const char* WIFI_PASSWORD = "Gabriel12345";
+const char* MQTT_SERVER = "192.168.137.1";
 const int MQTT_PORT = 1883;
 
 // Instâncias
