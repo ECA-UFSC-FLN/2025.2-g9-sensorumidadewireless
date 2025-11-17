@@ -94,8 +94,27 @@ void MainController::handleBind() {
     strcpy(req.req_id, reqId);
     strcpy(req.nome, "esp32_1");
 
+    char debugMessage[128];
+    snprintf(
+        debugMessage,
+        sizeof(debugMessage),
+        "Bind request struct -> req_id=%s nome=%s",
+        req.req_id,
+        req.nome
+    );
+    logger.debug(debugMessage);
+
     char buffer[256];
     if (json.serialize(&req, buffer, sizeof(buffer))) {
+        char serializedInfo[160];
+        snprintf(
+            serializedInfo,
+            sizeof(serializedInfo),
+            "Bind payload serialized: %s",
+            buffer
+        );
+        logger.debug(serializedInfo);
+
         mqtt.publish(TOPICO_BIND_REQUEST, buffer);
         logger.printf("[BIND] Solicitando ID com req_id=%s\n", req.req_id);
 
@@ -111,6 +130,8 @@ void MainController::handleBind() {
             logger.error("[BIND] Timeout ao aguardar resposta, tentando novamente...");
             hardware.delay(2000);
         }
+    } else {
+        logger.debug("Bind payload serialization failed");
     }
 }
 
