@@ -48,6 +48,8 @@ class PahoMQTTConsumer(IMQTTConsumer):
         self.broker_port = broker_port
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_message = self._on_message
+        self.client.on_connect = self._on_connect
+        self.client.on_disconnect = self._on_disconnect
         self._connected = False
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -69,12 +71,12 @@ class PahoMQTTConsumer(IMQTTConsumer):
             self.subscribe(self.TOPIC_UNBIND)
 
             logger.info(
-                f"MQTT Consumer connected to "
-                f"{self.broker_host}:{self.broker_port}",
+                "MQTT Consumer connected to "
+                "{self.broker_host}:{self.broker_port}",
             )
             return True
         except Exception as e:
-            logger.error(f"Failed to connect MQTT Consumer: {e}")
+            logger.error("Failed to connect MQTT Consumer: {e}")
             self._connected = False
             return False
 
@@ -98,24 +100,24 @@ class PahoMQTTConsumer(IMQTTConsumer):
         try:
             result, _ = self.client.subscribe(topic)
             if result == mqtt.MQTT_ERR_SUCCESS:
-                logger.info(f"Subscribed to topic: {topic}")
+                logger.info("Subscribed to topic: {topic}")
                 return True
-            logger.error(f"Failed to subscribe to {topic}: {result}")
+            logger.error("Failed to subscribe to {topic}: {result}")
             return False
         except Exception as e:
-            logger.error(f"Error subscribing to {topic}: {e}")
+            logger.error("Error subscribing to {topic}: {e}")
             return False
 
     def start(self) -> None:
         """Start the consumer loop in a separate thread."""
         if self._thread is not None and self._thread.is_alive():
-            logger.warning("MQTT Consumer already running")
+            logger.warning("[MQTT-CONSUMER] Already running")
             return
 
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        logger.info("MQTT Consumer thread started")
+        logger.info("[MQTT-CONSUMER] Thread started and listening for messages")
 
     def stop(self) -> None:
         """Stop the consumer loop and cleanup resources."""
@@ -129,9 +131,36 @@ class PahoMQTTConsumer(IMQTTConsumer):
     def _run_loop(self) -> None:
         """Internal method to run the MQTT loop."""
         try:
+            logger.info("[MQTT-CONSUMER] Starting loop_forever()")
             self.client.loop_forever()
         except Exception as e:
-            logger.error(f"Error in MQTT Consumer loop: {e}")
+            logger.error(f"[MQTT-CONSUMER] Error in loop: {e}")
+
+    def _on_connect(
+        self,
+        client: mqtt.Client,  # noqa: ARG002
+        userdata: None,  # noqa: ARG002
+        flags: dict,  # noqa: ARG002
+        rc: int,
+        properties: None = None,  # noqa: ARG002
+    ) -> None:
+        """Callback when connected to MQTT broker."""
+        if rc == 0:
+            logger.info("[MQTT-CONSUMER] Connected to broker successfully")
+            self._connected = True
+        else:
+            logger.error(f"[MQTT-CONSUMER] Failed to connect to broker: {rc}")
+            self._connected = False
+
+    def _on_disconnect(
+        self,
+        client: mqtt.Client,  # noqa: ARG002
+        userdata: None,  # noqa: ARG002
+        rc: int,
+    ) -> None:
+        """Callback when disconnected from MQTT broker."""
+        logger.warning(f"[MQTT-CONSUMER] Disconnected from broker: {rc}")
+        self._connected = False
 
     def _on_message(
         self,
@@ -149,19 +178,22 @@ class PahoMQTTConsumer(IMQTTConsumer):
         """
         try:
             payload = msg.payload.decode("utf-8")
-            logger.info(f"Received message on {msg.topic}: {payload}")
+            logger.info("[MQTT-CONSUMER] Received message on {msg.topic}: {payload}")
 
             if msg.topic == self.TOPIC_MEASUREMENT:
+                logger.info("[MQTT-CONSUMER] Routing to measurement handler")
                 self._handle_measurement(payload)
             elif msg.topic == self.TOPIC_BIND_REQUEST:
+                logger.info("[MQTT-CONSUMER] Routing to bind request handler")
                 self._handle_bind_request(payload)
             elif msg.topic == self.TOPIC_UNBIND:
+                logger.info("[MQTT-CONSUMER] Routing to unbind handler")
                 self._handle_unbind(payload)
             else:
-                logger.warning(f"Unhandled topic: {msg.topic}")
+                logger.warning("[MQTT-CONSUMER] Unhandled topic: {msg.topic}")
 
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.error("[MQTT-CONSUMER] Error processing message: {e}")
 
     def _handle_measurement(self, payload: str) -> None:
         """
@@ -180,7 +212,7 @@ class PahoMQTTConsumer(IMQTTConsumer):
             # Get sensor to find active process
             sensor = self.db_client.get_sensor_by_id(sensor_id)
             if not sensor:
-                logger.error(f"Sensor {sensor_id} not found in registry")
+                logger.error("Sensor {sensor_id} not found in registry")
                 return
 
             # Create measurement
@@ -195,14 +227,14 @@ class PahoMQTTConsumer(IMQTTConsumer):
             saved = self.db_client.add_new_measurement(measurement)
             if saved:
                 logger.info(
-                    f"Measurement saved: sensor={sensor_id}, "
-                    f"process={sensor.process_id}, rh={medicao}",
+                    "Measurement saved: sensor={sensor_id}, "
+                    "process={sensor.process_id}, rh={medicao}",
                 )
             else:
                 logger.error("Failed to save measurement to database")
 
         except (KeyError, ValueError, json.JSONDecodeError) as e:
-            logger.error(f"Invalid measurement payload: {e}")
+            logger.error("Invalid measurement payload: {e}")
 
     def _handle_bind_request(self, payload: str) -> None:
         """
@@ -228,7 +260,7 @@ class PahoMQTTConsumer(IMQTTConsumer):
 
             if not active_process:
                 logger.warning(
-                    f"No active process found for bind request from {nome}",
+                    "No active process found for bind request from {nome}",
                 )
                 # Send failure response
                 response = json.dumps({
@@ -252,8 +284,8 @@ class PahoMQTTConsumer(IMQTTConsumer):
             )
             if created:
                 logger.info(
-                    f"Sensor {new_sensor_id} registered "
-                    f"for process {active_process.id}",
+                    "Sensor {new_sensor_id} registered "
+                    "for process {active_process.id}",
                 )
 
                 # Send success response
@@ -274,7 +306,7 @@ class PahoMQTTConsumer(IMQTTConsumer):
                 self.publisher.publish(self.TOPIC_BIND_RESPONSE, response)
 
         except (KeyError, ValueError, json.JSONDecodeError) as e:
-            logger.error(f"Invalid bind request payload: {e}")
+            logger.error("Invalid bind request payload: {e}")
 
     def _handle_unbind(self, payload: str) -> None:  # noqa: PLR6301
         """
@@ -294,8 +326,8 @@ class PahoMQTTConsumer(IMQTTConsumer):
 
             # Log unbind event but preserve all data in database
             logger.info(
-                f"Sensor {sensor_id} unbound (data preserved for history)",
+                "Sensor {sensor_id} unbound (data preserved for history)",
             )
 
         except (KeyError, ValueError, json.JSONDecodeError) as e:
-            logger.error(f"Invalid unbind payload: {e}")
+            logger.error("Invalid unbind payload: {e}")
