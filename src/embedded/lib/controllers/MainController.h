@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include "../utils/string_utils.h"
 #include "../hal/hardware_interface.h"
 #include "../comm/mqtt_interface.h"
