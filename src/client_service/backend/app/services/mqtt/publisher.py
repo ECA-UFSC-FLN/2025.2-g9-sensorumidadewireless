@@ -53,14 +53,14 @@ class PahoMQTTPublisher(IMQTTPublisher):
             self._connected = False
             logger.info("MQTT Publisher disconnected")
 
-    def publish(self, topic: str, payload: str) -> bool:
+    def publish(self, topic: str, payload: str, retained: bool = False) -> bool:
         """
         Publish a message to a topic.
 
         Args:
             topic (str): The MQTT topic to publish to.
             payload (str): The message payload.
-
+            retained (bool): Whether to retain the message.
         Returns:
             bool: True if publish successful, False otherwise.
         """
@@ -69,7 +69,7 @@ class PahoMQTTPublisher(IMQTTPublisher):
             return False
 
         try:
-            result = self.client.publish(topic, payload)
+            result = self.client.publish(topic, payload, retain=retained)
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 logger.info(f"Published to {topic}: {payload}")
                 return True
@@ -79,14 +79,16 @@ class PahoMQTTPublisher(IMQTTPublisher):
             logger.error(f"Error publishing to {topic}: {e}")
             return False
 
-    def publish_process_command(self, command: str) -> bool:
+    def publish_process_command(
+        self, command: str, retained: bool = False
+    ) -> bool:
         """
         Publish a process command to the sensors.
 
         Args:
             command (str): Command to send ("iniciar" or "finalizar").
-
+            retained (bool): Whether to retain the message.
         Returns:
             bool: True if publish successful, False otherwise.
         """
-        return self.publish("sensores/processo", command)
+        return self.publish("sensores/processo", command, retained=retained)

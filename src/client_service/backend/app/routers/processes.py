@@ -134,7 +134,7 @@ async def end_process(
         )
 
     # Publish command to finalize measurements
-    mqtt.publish_process_command("finalizar")
+    mqtt.publish_process_command("finalizar", retained=True)
 
     return Response(status_code=200)
 

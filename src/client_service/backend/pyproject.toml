@@ -51,6 +51,8 @@ ignore = [
     "TRY300",
     "FA100",
     "COM812",      # Conflicts with formatter
+    "FBT001",
+    "FBT002"
 
 ]
 
