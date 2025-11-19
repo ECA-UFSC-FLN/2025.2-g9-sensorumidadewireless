@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "../utils/string_utils.h"
 #include "../hal/hardware_interface.h"
 #include "../comm/mqtt_interface.h"
@@ -45,42 +46,43 @@ public:
         char status[8];
         
         bool deserialize(const char* input) {
-            // Simple JSON parsing for bind response
-            const char* req_id_start = strstr(input, "\"req_id\":\"");
-            const char* id_start = strstr(input, "\"id\":\"");
-            const char* status_start = strstr(input, "\"status\":\"");
-            
-            if (!req_id_start || !id_start || !status_start) {
-                return false;
-            }
-            
-            // Extract req_id
-            req_id_start += 10; // Skip "req_id":"
-            const char* req_id_end = strchr(req_id_start, '"');
-            if (!req_id_end || (req_id_end - req_id_start) >= (int)sizeof(req_id)) {
-                return false;
-            }
-            strncpy(req_id, req_id_start, req_id_end - req_id_start);
-            req_id[req_id_end - req_id_start] = '\0';
-            
-            // Extract id
-            id_start += 5; // Skip "id":"
-            const char* id_end = strchr(id_start, '"');
-            if (!id_end || (id_end - id_start) >= (int)sizeof(id)) {
-                return false;
-            }
-            strncpy(id, id_start, id_end - id_start);
-            id[id_end - id_start] = '\0';
-            
-            // Extract status
-            status_start += 9; // Skip "status":"
-            const char* status_end = strchr(status_start, '"');
-            if (!status_end || (status_end - status_start) >= (int)sizeof(status)) {
-                return false;
-            }
-            strncpy(status, status_start, status_end - status_start);
-            status[status_end - status_start] = '\0';
-            
+            // Robust extraction helper: finds a string value for a given JSON key
+            auto extract_string = [&](const char* src, const char* key, char* dest, size_t destSize) -> bool {
+                const char* p = strstr(src, key);
+                if (!p) return false;
+                p += strlen(key); // move past the key
+                // find ':' after key
+                p = strchr(p, ':');
+                if (!p) return false;
+                p++; // move past ':'
+                // skip whitespace
+                while (*p && (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')) p++;
+                // value should be either quoted string or unquoted token
+                if (*p == '\"') {
+                    p++; // skip opening quote
+                    const char* end = strchr(p, '"');
+                    if (!end) return false;
+                    size_t len = end - p;
+                    if (len >= destSize) return false;
+                    strncpy(dest, p, len);
+                    dest[len] = '\0';
+                    return true;
+                } else {
+                    // unquoted value (read until comma or closing brace)
+                    const char* end = p;
+                    while (*end && *end != ',' && *end != '}' && !isspace((unsigned char)*end)) end++;
+                    size_t len = end - p;
+                    if (len == 0 || len >= destSize) return false;
+                    strncpy(dest, p, len);
+                    dest[len] = '\0';
+                    return true;
+                }
+            };
+
+            // Try to extract the required fields in a whitespace-tolerant way
+            if (!extract_string(input, "\"req_id\"", req_id, sizeof(req_id))) return false;
+            if (!extract_string(input, "\"id\"", id, sizeof(id))) return false;
+            if (!extract_string(input, "\"status\"", status, sizeof(status))) return false;
             return true;
         }
     };
