@@ -25,13 +25,14 @@ class IMQTTPublisher(ABC):
         """Disconnect from the MQTT broker."""
 
     @abstractmethod
-    def publish(self, topic: str, payload: str) -> bool:
+    def publish(self, topic: str, payload: str, retained: bool = False) -> bool:
         """
         Publish a message to a topic.
 
         Args:
             topic (str): The MQTT topic to publish to.
             payload (str): The message payload.
+            retained (bool): Whether to retain the message on broker.
 
         Returns:
             bool: True if publish successful, False otherwise.

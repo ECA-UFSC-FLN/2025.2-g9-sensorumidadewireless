@@ -7,6 +7,8 @@
 static RTC_DATA_ATTR char retainedId[32] = "";
 // RTC memory to retain whether the process was started so we continue across deep sleep
 static RTC_DATA_ATTR bool retainedProcessActive = false;
+// RTC memory to retain whether the process was finalized
+static RTC_DATA_ATTR bool retainedProcessFinalized = false;
 
 MainController* MainController::instance = nullptr;
 
@@ -40,9 +42,21 @@ MainController::MainController(
         logger.printf("[INIT] Restored process active flag from RTC\n");
     }
 
-    // If we already have an ID and the process was active before sleep, start measurements immediately
-    if (bindOk && processoAtivo) {
+    // Restore process finalized flag
+    if (retainedProcessFinalized) {
+        processoFinalizado = true;
+        logger.printf("[INIT] Restored process finalized flag from RTC\n");
+    }
+
+    // Priority: If process was finalized, go to CLEANUP regardless of other states
+    if (processoFinalizado) {
+        estadoAtual = CLEANUP;
+        logger.printf("[INIT] Process finalized - going to CLEANUP\n");
+    }
+    // Otherwise, if we have ID and process is active, continue measurements
+    else if (bindOk && processoAtivo) {
         estadoAtual = MEDICAO;
+        logger.printf("[INIT] Resuming measurements after deep sleep\n");
     }
 }
 
@@ -111,6 +125,7 @@ void MainController::handleMQTTCallback(const char* topic, const uint8_t* payloa
         if (strcmp(message, "finalizar") == 0) {
             processoFinalizado = true;
             retainedProcessActive = false; // stop persisting the process
+            retainedProcessFinalized = true; // persist finalization across deep sleep
             logger.printf("[PROCESS] Received finalizar -> processoFinalizado=true\n");
         }
     }
@@ -254,8 +269,13 @@ void MainController::handleShutdown() {
     processoAtivo = false;
     processoFinalizado = false;
     bindOk = false;
+    // Limpa flags da RTC memory para o próximo processo
+    retainedProcessActive = false;
+    retainedProcessFinalized = false;
+    retainedId[0] = '\0';
     // Volta para o estado inicial
     estadoAtual = CONEXAO_MQTT;
+    logger.printf("[SHUTDOWN] All flags cleared, ready for next process\n");
 }
 
 void MainController::loop() {
