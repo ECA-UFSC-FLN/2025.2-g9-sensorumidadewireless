@@ -117,6 +117,14 @@ void MainController::handleMQTTCallback(const char* topic, const uint8_t* payloa
 
     if (strcmp(topic, TOPICO_PROCESSO) == 0) {
         if (strcmp(message, "iniciar") == 0) {
+            logger.printf("[PROCESS] *** RECEIVED 'iniciar' COMMAND ***\n");
+            
+            // Ignore if we're in CLEANUP or SHUTDOWN states (stale retained message)
+            if (estadoAtual == CLEANUP || estadoAtual == SHUTDOWN) {
+                logger.printf("[PROCESS] Ignoring 'iniciar' - in cleanup/shutdown state\n");
+                return;
+            }
+            
             processoAtivo = true;
             retainedProcessActive = true; // persist across deep sleep
             logger.printf("[PROCESS] Received iniciar -> processoAtivo=true\n");
@@ -124,6 +132,16 @@ void MainController::handleMQTTCallback(const char* topic, const uint8_t* payloa
             if (bindOk) estadoAtual = MEDICAO; else estadoAtual = BIND;
         }
         if (strcmp(message, "finalizar") == 0) {
+            logger.printf("[PROCESS] *** RECEIVED 'finalizar' COMMAND ***\n");
+            
+            // Only process 'finalizar' if we're actually in an active process
+            // Ignore if in CONEXAO_MQTT, AGUARDE, CLEANUP, SHUTDOWN (stale retained message)
+            if (estadoAtual == CONEXAO_MQTT || estadoAtual == AGUARDE || 
+                estadoAtual == CLEANUP || estadoAtual == SHUTDOWN) {
+                logger.printf("[PROCESS] Ignoring 'finalizar' - not in active process state (current: %d)\n", estadoAtual);
+                return;
+            }
+            
             processoFinalizado = true;
             retainedProcessActive = false; // stop persisting the process
             retainedProcessFinalized = true; // persist finalization across deep sleep
