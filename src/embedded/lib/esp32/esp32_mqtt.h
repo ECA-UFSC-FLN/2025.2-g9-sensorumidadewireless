@@ -11,6 +11,7 @@ public:
     
     bool connect(const char* clientId) override;
     bool publish(const char* topic, const char* payload) override;
+    bool publish(const char* topic, const char* payload, bool retain) override;
     bool subscribe(const char* topic) override;
     void setCallback(MQTTCallback callback) override;
     bool isConnected() override;

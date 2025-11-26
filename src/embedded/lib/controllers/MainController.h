@@ -123,6 +123,9 @@ public:
     // Get current state
     Estado getState() const { return estadoAtual; }
 
+    // Ensure MQTT subscriptions (call after reconnect)
+    void ensureSubscriptions();
+
 private:
     // Interfaces injected
     IHardware& hardware;
@@ -157,6 +160,7 @@ private:
     void handleShutdown();
     void realizaMedicao();
     StringView generateUUID();
+    void subscribeToTopics(); // Subscribe/re-subscribe to MQTT topics
 
     // Static callback wrapper
     static void staticMQTTCallback(const char* topic, const uint8_t* payload, unsigned int length);

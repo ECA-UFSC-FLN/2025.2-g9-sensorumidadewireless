@@ -99,6 +99,34 @@ public:
         return true;
     }
 
+    bool publish(const char* topic, const char* payload, bool retain) override {
+        std::cout << "[MockMQTT] Published to " << topic << " (retain=" << (retain?"true":"false") << "): " << payload << "\n";
+        if (publishInterceptor) {
+            publishInterceptor(topic, payload);
+        }
+        // Reuse same behavior as non-retain publish for tests
+        if (strcmp(topic, "sensores/bind/request") == 0) {
+            try {
+                auto req = nlohmann::json::parse(payload);
+                if (req.contains("req_id") && req.contains("nome")) {
+                    std::string reqId = req["req_id"];
+                    nlohmann::json resp;
+                    resp["req_id"] = reqId;
+                    resp["id"] = "TEST_ID_001";
+                    resp["status"] = "ok";
+                    std::string respStr = resp.dump();
+                    std::cout << "[MockMQTT] Sending bind response: " << respStr << "\n";
+                    if (callback) {
+                        callback("sensores/bind/response", reinterpret_cast<const uint8_t*>(respStr.c_str()), respStr.length());
+                    }
+                }
+            } catch (const nlohmann::json::exception& e) {
+                std::cerr << "[MockMQTT] JSON parse error: " << e.what() << "\n";
+            }
+        }
+        return true;
+    }
+
     bool subscribe(const char* topic) override {
         std::cout << "[MockMQTT] Subscribed to: " << topic << "\n";
         return true;

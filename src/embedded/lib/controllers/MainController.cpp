@@ -57,6 +57,7 @@ MainController::MainController(
     else if (bindOk && processoAtivo) {
         estadoAtual = MEDICAO;
         logger.printf("[INIT] Resuming measurements after deep sleep\n");
+        logger.printf("[INIT] Will re-subscribe to MQTT topics when connected\n");
     }
 }
 
@@ -176,11 +177,28 @@ void MainController::realizaMedicao() {
     }
 }
 
+void MainController::subscribeToTopics() {
+    logger.printf("[MQTT] Subscribing to topics...\n");
+    mqtt.subscribe(TOPICO_PROCESSO);
+    mqtt.subscribe(TOPICO_BIND_RESPONSE);
+    logger.printf("[MQTT] Subscribed to: %s, %s\n", TOPICO_PROCESSO, TOPICO_BIND_RESPONSE);
+}
+
+void MainController::ensureSubscriptions() {
+    // Called from main.cpp after MQTT reconnect
+    // to ensure we're subscribed to topics even after deep sleep
+    logger.printf("[MQTT] Ensuring subscriptions after reconnect...\n");
+    if (mqtt.isConnected()) {
+        subscribeToTopics();
+    } else {
+        logger.printf("[MQTT] Cannot subscribe - not connected\n");
+    }
+}
+
 void MainController::handleConexaoMQTT() {
     if (mqtt.connect("ESP32Client")) {
         logger.info("Conectado ao MQTT.");
-        mqtt.subscribe(TOPICO_PROCESSO);
-        mqtt.subscribe(TOPICO_BIND_RESPONSE);
+        subscribeToTopics();
         estadoAtual = AGUARDE;
     } else {
         logger.info("Falha, tentando novamente em 1s...");
@@ -225,15 +243,35 @@ void MainController::handleAguarde() {
 }
 
 void MainController::handleMedicao() {
+    logger.printf("[MEDICAO] Starting measurement cycle\n");
+    logger.printf("[MEDICAO] Current flags: processoFinalizado=%d\n", processoFinalizado);
+    
     realizaMedicao();
+    
+    // Give time for any pending MQTT messages to be processed
+    // This allows "finalizar" command to be received before deciding to sleep
+    logger.printf("[MEDICAO] Waiting for pending MQTT messages...\n");
+    hardware.delay(500); // Wait 500ms for MQTT messages
+    mqtt.loop(); // Process any pending messages
+    
+    logger.printf("[MEDICAO] After wait: processoFinalizado=%d\n", processoFinalizado);
+    
     if (processoFinalizado) {
+        logger.printf("[MEDICAO] Process finalized - going to CLEANUP\n");
         estadoAtual = CLEANUP;
     } else {
+        logger.printf("[MEDICAO] Continuing - going to DEEP_SLEEP\n");
         estadoAtual = DEEP_SLEEP;
     }
 }
 
 void MainController::handleDeepSleep() {
+    logger.printf("[SLEEP] ========== ENTERING DEEP SLEEP ==========\n");
+    logger.printf("[SLEEP] Current flags before sleep:\n");
+    logger.printf("[SLEEP]   processoAtivo=%d\n", processoAtivo);
+    logger.printf("[SLEEP]   processoFinalizado=%d\n", processoFinalizado);
+    logger.printf("[SLEEP]   bindOk=%d\n", bindOk);
+    
     // Persist ID to RTC memory so we don't rebind after wake
     if (idFinal[0] != '\0') {
         strncpy(retainedId, idFinal, sizeof(retainedId) - 1);
@@ -241,9 +279,14 @@ void MainController::handleDeepSleep() {
         logger.printf("[SLEEP] Persisting ID to RTC: %s\n", retainedId);
     }
 
+    logger.printf("[SLEEP] Persisting flags to RTC:\n");
+    logger.printf("[SLEEP]   retainedProcessActive=%d\n", retainedProcessActive);
+    logger.printf("[SLEEP]   retainedProcessFinalized=%d\n", retainedProcessFinalized);
     logger.info("[SLEEP] Entrando em deep sleep por 10s...");
+    
     hardware.deepSleep(10 * 1000000);
     // Após acordar do deep sleep, volta para o estado de medição
+    // NOTA: Esta linha nunca executa - ESP32 reinicia após deep sleep!
     estadoAtual = MEDICAO;
 }
 
@@ -280,6 +323,13 @@ void MainController::handleShutdown() {
 
 void MainController::loop() {
     mqtt.loop();
+
+    // Log state transitions for debugging
+    static Estado lastState = CONEXAO_MQTT;
+    if (estadoAtual != lastState) {
+        logger.printf("[LOOP] State transition: %d -> %d\n", lastState, estadoAtual);
+        lastState = estadoAtual;
+    }
 
     switch (estadoAtual) {
         case CONEXAO_MQTT:

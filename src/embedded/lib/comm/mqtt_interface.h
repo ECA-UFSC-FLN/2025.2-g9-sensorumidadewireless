@@ -21,6 +21,14 @@ public:
      * @return true if publish successful, false otherwise
      */
     virtual bool publish(const char* topic, const char* payload) = 0;
+    /**
+     * @brief Publish message to a topic with optional retain flag
+     * @param topic Topic to publish to
+     * @param payload Message payload
+     * @param retain Whether the broker should retain the message
+     * @return true if publish successful, false otherwise
+     */
+    virtual bool publish(const char* topic, const char* payload, bool retain) = 0;
     
     /**
      * @brief Subscribe to a topic

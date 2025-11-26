@@ -34,6 +34,10 @@ bool ESP32MQTTClient::publish(const char* topic, const char* payload) {
     return mqttClient.publish(topic, payload);
 }
 
+bool ESP32MQTTClient::publish(const char* topic, const char* payload, bool retain) {
+    return mqttClient.publish(topic, payload, retain);
+}
+
 bool ESP32MQTTClient::subscribe(const char* topic) {
     return mqttClient.subscribe(topic);
 }

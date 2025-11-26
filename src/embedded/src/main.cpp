@@ -75,7 +75,10 @@ void loop() {
             logger.info("Tentando reconectar ao MQTT...");
             if (mqtt.connect("ESP32_Client")) {
                 logger.info("MQTT reconectado com sucesso!");
-                // Aqui você pode adicionar novas subscrições se necessário
+                // Re-subscribe aos tópicos após reconexão
+                if (controller) {
+                    controller->ensureSubscriptions();
+                }
             } else {
                 logger.error("Falha ao reconectar ao MQTT");
             }
