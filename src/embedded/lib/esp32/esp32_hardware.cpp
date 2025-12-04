@@ -19,6 +19,22 @@ unsigned long ESP32Hardware::getCurrentTime() {
     return millis();
 }
 
+
+
+// É necessária a realização de uma calibração
+const int DRY_VALUE = 3800;   // leitura quando está seco
+const int WET_VALUE = 1200;   // leitura quando está molhado
+
 float ESP32Hardware::readAnalog(uint8_t pin) {
-    return analogRead(pin) * (3.3 / 4095.0);  // Convert to voltage (3.3V reference)
+
+    int raw = analogRead(pin);
+
+    // Converte para porcentagem (0–100)
+    float percent = (float)(raw - DRY_VALUE) * 100.0 / (WET_VALUE - DRY_VALUE);
+
+    // Limita entre 0 e 100
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+
+    return percent;
 }
